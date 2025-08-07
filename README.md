@@ -20,12 +20,8 @@
 
 ## 🚀 Lancement rapide
 
-```bash
-git clone https://github.com/IAidenI/Richard.git
-cd ton-projet
-flutter pub get
-flutter run
-```
+[Lien vers l'apk](https://github.com/IAidenI/Richard/releases/download/v0.1/richard.apk)
+
 
 ### Prérequis
 
