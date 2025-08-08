@@ -191,7 +191,7 @@ class CustomFonts {
     );
   }
 
-  static TextStyle buttonStyle() {
+  static TextStyle textButtonStyle(ColorCode weather) {
     return TextStyle(
       fontFamily: 'BebasNeue',
       fontSize: 20,
@@ -210,13 +210,14 @@ class PopupColorCode {
   TextStyle _styleVariable = CustomFonts.popupTitle(ColorCode.UNKNOW);
   Color _frame = Colors.black;
   Color _background = Colors.white;
-  Color _colorButton = Colors.white;
-  TextStyle _colorButtonText = CustomFonts.buttonStyle();
+  Color _colorButton = Colors.grey;
+  TextStyle _colorButtonText = CustomFonts.textButtonStyle(ColorCode.UNKNOW);
 
   PopupColorCode(this.weather) {
     _styleTitle = CustomFonts.popupTitle(weather);
     _styleLabel = CustomFonts.popupLabel(weather);
     _styleVariable = CustomFonts.popupVariable(weather);
+    _colorButtonText = CustomFonts.textButtonStyle(weather);
 
     switch (weather) {
       case ColorCode.SUN:

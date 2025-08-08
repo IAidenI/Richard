@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:richard/assets/constants.dart';
 import 'package:richard/modeles/weatherAPI.dart';
 import 'package:richard/ui/customFonts.dart';
@@ -335,12 +336,14 @@ class WeatherCard extends StatelessWidget {
   final String title;
   final String temperature;
   final ColorCode weather;
+  final void Function()? onTap;
 
   const WeatherCard({
     super.key,
     required this.title,
     required this.temperature,
     required this.weather,
+    this.onTap,
   });
 
   // Associe chaque temps à un icon
@@ -381,20 +384,44 @@ class WeatherCard extends StatelessWidget {
       elevation: 6,
       shadowColor: const Color.fromARGB(62, 212, 212, 212),
       color: const Color.fromARGB(25, 255, 255, 255),
-      shape: const StadiumBorder(), // Bords arrondis façon capsule
-      clipBehavior: Clip.antiAlias, // Découpe les débordements
-      child: SizedBox(
-        width: 100,
-        height: 180,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(title, style: CustomFonts.weatherCard()),
-            const SizedBox(height: 12),
-            SizedBox(width: 60, height: 60, child: getCorrectIcon()),
-            const SizedBox(height: 12),
-            Text(temperature, style: CustomFonts.weatherCard()),
-          ],
+      // Forme de capsule avec des fin bords blancs
+      shape: const StadiumBorder(
+        side: BorderSide(color: Color.fromARGB(51, 255, 255, 255), width: 1.2),
+      ),
+      clipBehavior: Clip.antiAlias, // Découpe en suivant la forme
+      // Comme GestureDetector mais avec un effet de splash
+      child: InkWell(
+        onTap: onTap,
+        customBorder:
+            const StadiumBorder(), // Fait en sorte que le splash soit en forme de capsule
+        splashFactory:
+            InkRipple.splashFactory, // Animation d'onde de choc au clic
+        splashColor: const Color.fromARGB(
+          76,
+          255,
+          255,
+          255,
+        ), // Couleur de l'onde
+        highlightColor: const Color.fromARGB(
+          5,
+          255,
+          255,
+          255,
+        ), // Couleur lors du maintient du clic
+        child: SizedBox(
+          width: 100,
+          height: 180,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Affiche l'heure, l'icon et la température souhaité
+              Text(title, style: CustomFonts.weatherCard()),
+              const SizedBox(height: 12),
+              SizedBox(width: 60, height: 60, child: getCorrectIcon()),
+              const SizedBox(height: 12),
+              Text(temperature, style: CustomFonts.weatherCard()),
+            ],
+          ),
         ),
       ),
     );
@@ -588,7 +615,7 @@ class CityAutoComplete<T> extends StatelessWidget {
     final List<City<T>> cities = dataList.entries
         .map((entry) => City<T>(name: entry.value, codeInsee: entry.key))
         .toList();
-
+    print("[ DEBUG ] Autocomplete : $currentData");
     return Autocomplete<City<T>>(
       initialValue: TextEditingValue(
         text: dataList.entries
@@ -631,6 +658,53 @@ class CityAutoComplete<T> extends StatelessWidget {
           onSelected!(selection);
         }
       },
+    );
+  }
+}
+
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 120,
+        height: 120,
+        child: Material(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: LoadingIndicator(
+                  indicatorType: Indicator.lineSpinFadeLoader,
+                  colors: [
+                    Colors.black,
+                    Colors.grey[800]!,
+                    Colors.grey[600]!,
+                    Colors.grey[400]!,
+                    Colors.grey[200]!,
+                  ],
+                  strokeWidth: 2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                "Loading...",
+                style: TextStyle(
+                  fontFamily: 'BebasNeue',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

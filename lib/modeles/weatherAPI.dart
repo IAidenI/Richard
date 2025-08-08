@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
+
 import '../assets/constants.dart';
 import 'package:http/http.dart' as http;
 /*
@@ -16,7 +18,7 @@ class Weatherapi {
   // Données pour la connexion à l'api
   static const String _token =
       "fd59e845bda91b5102cd99cf81c99783a28cfcff98d683dc1f9f44c7c60e3c33";
-  String _insee = "63113"; // Toulouse : 31555 ; Paris : 75056 ; Muret : 31395
+  String _insee = "75056"; // Par défaut la localisation est Muret
   static const String _url = "https://api.meteo-concept.com/api";
   static const Map<When, String> _endpoints = {
     When.NOW: "/forecast/nextHours",
@@ -24,44 +26,186 @@ class Weatherapi {
     When.DAILY: "/forecast/daily",
   };
 
+  // Il est possible de passer en paramètre &lating à l'api de météo mais c'est assez bancale
+  // le résultat des coordonées ne corresponds pas (ex curl "https://api.meteo-concept.com/api/forecast/nextHours?token=${TOKEN}&latlng=43.4303,1.3536" | jq '.city[]')
+  // Donc je passe par une api gouvernemental afin de convertir la position gps en code insee
+  static const String _urlGPSInsee = "https://geo.api.gouv.fr/communes?";
+  static const String _urlArguments =
+      "&fields=code&format=json&geometry=centre";
+
   String get getCodeInsee => _insee;
   set setCodeInsee(String insee) => _insee = insee;
 
-  String _cityName = "";
+  // Pour stocker la position gps de l'appareil si demandé
+  Position? _gpsPosition;
+  Position? get getGPSPosition => _gpsPosition;
+  bool _enableGPS = true;
+
+  bool get isPositionGPS => _enableGPS;
+  bool get enableGPS => _enableGPS = true;
+  bool get disableGPS => _enableGPS = false;
+
+  bool isReady = false;
+
+  String? _cityName;
 
   // Données pour le stockage de la météo actuelle
-  int _currentTemp = -100;
-  int _currentWind = -1;
-  int _currentHumidity = -1;
-  int _currentWeather = -1;
+  int? _currentTemp;
+  int? _currentWind;
+  int? _currentHumidity;
+  int? _currentWeather;
 
   // Pour les informations supplémentaires
-  int _gustWind = -1;
-  int _probaRain = -1;
-  int _probaFrost = -1;
-  int _probaFog = -1;
+  int? _gustWind;
+  int? _probaRain;
+  int? _probaFrost;
+  int? _probaFog;
 
   // Données pour les 12 prochaines heures
   List<HourlyData> _hourlyData = [
-    HourlyData(hour: -2, temp: -100, weather: -1),
-    HourlyData(hour: -2, temp: -100, weather: -1),
-    HourlyData(hour: -2, temp: -100, weather: -1),
+    HourlyData(
+      hour: null,
+      temp: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
+    HourlyData(
+      hour: null,
+      temp: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
+    HourlyData(
+      hour: null,
+      temp: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
   ];
 
   // Données pour les 7 prochains jours
   List<DailyData> _dailyData = [
-    DailyData(day: -1, tempMax: -100, tempMin: -100, weather: -1),
-    DailyData(day: -1, tempMax: -100, tempMin: -100, weather: -1),
-    DailyData(day: -1, tempMax: -100, tempMin: -100, weather: -1),
+    DailyData(
+      day: null,
+      tempMax: null,
+      tempMin: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
+    DailyData(
+      day: null,
+      tempMax: null,
+      tempMin: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
+    DailyData(
+      day: null,
+      tempMax: null,
+      tempMin: null,
+      weather: null,
+      gustWind: null,
+      probaRain: null,
+      probaFrost: null,
+      probaFog: null,
+    ),
   ];
+
+  // Première instance récupèration de la position gps
+  Future<void> initAPI() async {
+    _gpsPosition = await _determinatePosition();
+  }
 
   // Appelle l'api
   Future<void> fetchWeather() async {
-    print("[ DEBUG ] Fetching data...");
-    await fetchWeatherHourly();
-    await fetchWeatherDaily();
-    print("[ OK ] Data feched.");
-    print("");
+    try {
+      print("===========================================");
+      print("[ DEBUG ] Fetching data...");
+
+      // Si l'utilisateur demande la position gps, alors convertir en code insee
+      if (_enableGPS && _gpsPosition != null) {
+        await fetchGPSToInsee();
+      }
+
+      print("[ DEBUG ] Using insee code $_insee");
+      await fetchWeatherHourly();
+      await fetchWeatherDaily();
+      print("[ OK ] Data feched.");
+      isReady = true;
+      print("");
+      print("===========================================");
+    } on Exception catch (_) {
+      isReady = true;
+    }
+  }
+
+  Future<Position?> _determinatePosition() async {
+    bool serviceEnable;
+    LocationPermission permissions;
+
+    // Vérifie si la géolocalisation est disponible
+    print("[ DEBUG ] Service enable...");
+    serviceEnable = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnable) {
+      print("[ DEBUG ] Service enable : ERROR.");
+      return null;
+    }
+    print("[ DEBUG ] Service enable : OK.");
+
+    // Vérifie et demande au besoin les permissions nécessaire
+    print("[ DEBUG ] Permission...");
+    permissions = await Geolocator.checkPermission();
+    if (permissions == LocationPermission.denied) {
+      print("[ DEBUG ] Requesting permission...");
+      permissions = await Geolocator.requestPermission();
+      if (permissions == LocationPermission.denied) {
+        print("[ DEBUG ] Permission : ERROR.");
+        return null;
+      }
+    }
+    print("[ DEBUG ] Permission : OK.");
+
+    print("[ DEBUG ] Denied forever...");
+    if (permissions == LocationPermission.deniedForever) {
+      print("[ DEBUG ] Denied forever : ERROR.");
+      return null;
+    }
+    print("[ DEBUG ] Denied forever : OK.");
+
+    return Geolocator.getCurrentPosition();
+  }
+
+  Future<void> fetchGPSToInsee() async {
+    print("[ DBUG ] Fetching GPS to Insee...");
+    String url =
+        "$_urlGPSInsee&lat=${_gpsPosition!.latitude}&lon=${_gpsPosition!.longitude}$_urlArguments";
+    print("[ DEBUG ] URL : $url");
+
+    // Appele de l'api
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      print("[ DEBUG ] Decode : OK.");
+      final json = jsonDecode(response.body);
+      _insee = json.first['code'];
+      print("[ DEBUG ] Insee code found : $_insee");
+    } else {
+      throw Exception("Failed to load weather");
+    }
   }
 
   /*
@@ -129,6 +273,10 @@ class Weatherapi {
               hour: match != null ? int.parse(match.group(1)!) : -1,
               temp: forecast['temp2m'],
               weather: forecast['weather'],
+              gustWind: forecast['gust10m'],
+              probaRain: forecast['probarain'],
+              probaFrost: forecast['probafrost'],
+              probaFog: forecast['probafog'],
             ),
           );
         }
@@ -158,11 +306,6 @@ class Weatherapi {
 
       // Récupère les données pour les 7 prochains jours
       for (var forecast in forecasts) {
-        // Day == 1 correspond au jour actuelle donc on ignore
-        if (forecast['day'] == 0) {
-          continue;
-        }
-
         // Ajoute au jour actuelle le jour reçue (ex on est mardi donc Mardi: 2, on reçoit 3,
         // donc pour déterminer de quel jour il s'agit, il faut faire 2 + 3 = 5 = Vendredi)
         int dayIndex = ((dayNumber - 1 + (forecast['day'] as int)) % 7) + 1;
@@ -174,11 +317,15 @@ class Weatherapi {
             tempMax: forecast['tmax'],
             tempMin: forecast['tmin'],
             weather: forecast['weather'],
+            gustWind: forecast['gust10m'],
+            probaRain: forecast['probarain'],
+            probaFrost: forecast['probafrost'],
+            probaFog: forecast['probafog'],
           ),
         );
 
-        // L'api va jusqu'à 14 jours donc à 7 on arrête
-        if (forecast['day'] == 7) {
+        // L'api va jusqu'à 14 jours donc à 7 on arrête (6 car il commence à 0)
+        if (forecast['day'] == 6) {
           break;
         }
       }
@@ -217,19 +364,19 @@ class Weatherapi {
   // Getters
 
   // Temps actuelle
-  String get getCityName => _cityName.toUpperCase();
-  String get getTemperature => "$_currentTemp°";
-  int get getWeather => _currentWeather;
+  String get getCityName => _cityName?.toUpperCase() ?? "";
+  String get getTemperature => "${_currentTemp ?? "--"}°";
+  int? get getWeather => _currentWeather;
   String get getWeatherDescription =>
       weatherDescriptions[_currentWeather] ?? "Inconnu";
-  String get getHumidity => "$_currentHumidity%";
-  String get getWind => "${_currentWind}km/h";
+  String get getHumidity => "${_currentHumidity ?? "--"}%";
+  String get getWind => "${_currentWind ?? "--"}km/h";
 
   // Infos supplémentaires
-  String get getGustWind => "${_gustWind}km/h";
-  String get getProbaRain => "$_probaRain%";
-  String get getProbaFrost => "$_probaFrost%";
-  String get getProbaFog => "$_probaFog%";
+  String get getGustWind => "${_gustWind ?? "--"}km/h";
+  String get getProbaRain => "${_probaRain ?? "--"}%";
+  String get getProbaFrost => "${_probaFrost ?? "--"}%";
+  String get getProbaFog => "${_probaFog ?? "--"}%";
 
   // Les 12 prochaines heures
   List<HourlyData> get getHourlyData => _hourlyData;
@@ -241,23 +388,38 @@ class Weatherapi {
 abstract class WeatherEntry {
   String formattedTime();
   String get formattedTemp;
-  int get weather;
+  String get getFormattedGustWind;
+  String get getFormattedProbaRain;
+  String get getFormattedProbaFrost;
+  String get getFormattedProbaFog;
+  int? get getWeather;
 }
 
 // Permet de stocker les données pour les 12 prochaines heures
 class HourlyData implements WeatherEntry {
-  final int hour;
-  final int temp;
-  final int _weather;
+  final int? hour;
+  final int? temp;
+  final int? gustWind;
+  final int? probaRain;
+  final int? probaFrost;
+  final int? probaFog;
+  final int? weather;
 
-  HourlyData({required this.hour, required this.temp, required int weather})
-    : _weather = weather;
+  HourlyData({
+    required this.hour,
+    required this.temp,
+    required this.gustWind,
+    required this.probaRain,
+    required this.probaFrost,
+    required this.probaFog,
+    required this.weather,
+  });
 
   @override
-  int get weather => _weather;
+  int? get getWeather => weather;
 
   @override
-  String get formattedTemp => temp == -100 ? '--°' : '$temp°';
+  String get formattedTemp => temp == null ? '--°' : '$temp°';
 
   @override
   String formattedTime() {
@@ -271,33 +433,65 @@ class HourlyData implements WeatherEntry {
     }
     return data;
   }
+
+  @override
+  String get getFormattedGustWind => "${gustWind ?? "--"}km/h";
+
+  @override
+  String get getFormattedProbaRain => "${probaRain ?? "--"}%";
+
+  @override
+  String get getFormattedProbaFrost => "${probaFrost ?? "--"}%";
+
+  @override
+  String get getFormattedProbaFog => "${probaFog ?? "--"}%";
 }
 
 // Permet de stocker les données pour les 7 prochains jours
 class DailyData implements WeatherEntry {
-  final int day;
-  final int tempMax;
-  final int tempMin;
-  final int _weather;
+  final int? day;
+  final int? tempMax;
+  final int? tempMin;
+  final int? gustWind;
+  final int? probaRain;
+  final int? probaFrost;
+  final int? probaFog;
+  final int? weather;
 
   DailyData({
+    required this.gustWind,
+    required this.probaRain,
+    required this.probaFrost,
+    required this.probaFog,
     required this.day,
     required this.tempMax,
     required this.tempMin,
-    required int weather,
-  }) : _weather = weather;
+    required this.weather,
+  });
 
   @override
-  int get weather => _weather;
+  int? get getWeather => weather;
 
   @override
   String get formattedTemp =>
-      tempMax == -100 || tempMin == -100 ? '--°/--°' : '$tempMin°/$tempMax°';
+      tempMax == null || tempMin == null ? '--°/--°' : '$tempMin°/$tempMax°';
 
   @override
   String formattedTime() {
-    return day == -1 ? "XXX" : "${dayTable[day]}";
+    return day == null ? "XXX" : "${dayTable[day]}";
   }
+
+  @override
+  String get getFormattedGustWind => "${gustWind ?? "--"}km/h";
+
+  @override
+  String get getFormattedProbaRain => "${probaRain ?? "--"}%";
+
+  @override
+  String get getFormattedProbaFrost => "${probaFrost ?? "--"}%";
+
+  @override
+  String get getFormattedProbaFog => "${probaFog ?? "--"}%";
 }
 
 // Permet d'identifier une ville comme étant un nom et un code insee
