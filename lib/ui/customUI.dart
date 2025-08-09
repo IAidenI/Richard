@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:richard/assets/constants.dart';
 import 'package:richard/modeles/weatherAPI.dart';
-import 'package:richard/ui/customFonts.dart';
+import 'package:richard/ui/theme.dart';
 
 // ==================================
 // ====-------  DARWINGS  -------====
@@ -12,56 +12,22 @@ import 'package:richard/ui/customFonts.dart';
   Crée un rond de couleur en fonction de la météo du jour
 */
 class WeatherCircle extends CustomPainter {
-  final ColorCode weather;
-  Color border = const Color.fromARGB(60, 255, 255, 255);
-  late Color fill;
+  final CustomTheme theme;
 
-  WeatherCircle(this.weather);
-
-  // Associe chaque temps à une couleur
-  void setColor() {
-    switch (weather) {
-      case ColorCode.SUN:
-        fill = const Color.fromARGB(255, 68, 163, 220);
-        break;
-      case ColorCode.SOME_CLOUDS:
-        fill = const Color.fromARGB(255, 232, 124, 132);
-        break;
-      case ColorCode.CLOUDS:
-        fill = const Color.fromARGB(255, 32, 204, 178);
-        break;
-      case ColorCode.RAIN:
-        fill = const Color.fromARGB(255, 32, 204, 178);
-        break;
-      case ColorCode.SNOW:
-        fill = const Color.fromARGB(255, 66, 175, 209);
-        break;
-      case ColorCode.THUNDERSTORM:
-        fill = const Color.fromARGB(255, 72, 44, 92);
-        break;
-      case ColorCode.HAIL:
-        fill = const Color.fromARGB(255, 72, 68, 76);
-        break;
-      default:
-        border = const Color.fromARGB(60, 144, 138, 138);
-        fill = const Color.fromARGB(255, 109, 109, 109);
-        break;
-    }
-  }
+  WeatherCircle(this.theme);
 
   @override
   void paint(Canvas canvas, Size size) {
     // Initialise les couleurs
-    setColor();
 
     // Crée les deux parties du cercle, la bordure et le centre
     final strokeWidth = 12.0;
     Paint borderCircle = Paint()
       ..strokeWidth = strokeWidth
-      ..color = border
+      ..color = theme.getTertiary
       ..style = PaintingStyle.stroke;
     Paint fillCircle = Paint()
-      ..color = fill
+      ..color = theme.getPrimary
       ..style = PaintingStyle.fill;
 
     // Centre le cercle
@@ -179,51 +145,18 @@ class FrameRounded extends CustomPainter {
 */
 class FrameTitle extends CustomPainter {
   final double padding;
-  final ColorCode weather;
+  final CustomTheme theme;
   Color border = const Color.fromARGB(255, 140, 140, 140);
   Color shadowColor = const Color.fromARGB(127, 162, 162, 162);
-  late Color fill;
 
-  FrameTitle({required this.padding, required this.weather});
-
-  // Associe chaque temps à une couleur
-  void setColor() {
-    switch (weather) {
-      case ColorCode.SUN:
-        fill = const Color.fromARGB(255, 199, 234, 255);
-        break;
-      case ColorCode.SOME_CLOUDS:
-        fill = const Color.fromARGB(255, 248, 199, 200);
-        break;
-      case ColorCode.CLOUDS:
-        fill = const Color.fromARGB(255, 168, 255, 242);
-        break;
-      case ColorCode.RAIN:
-        fill = const Color.fromARGB(255, 168, 255, 242);
-        break;
-      case ColorCode.SNOW:
-        fill = const Color.fromARGB(255, 148, 230, 255);
-        break;
-      case ColorCode.THUNDERSTORM:
-        fill = const Color.fromARGB(255, 198, 171, 216);
-        break;
-      case ColorCode.HAIL:
-        fill = const Color.fromARGB(255, 221, 221, 221);
-        break;
-      default:
-        fill = const Color.fromARGB(255, 198, 198, 198);
-        break;
-    }
-  }
+  FrameTitle({required this.padding, required this.theme});
 
   @override
   void paint(Canvas canvas, Size size) {
-    setColor();
-
     const double borderWidth = 2;
     // Crée un rectange plein
     Paint rectangle = Paint()
-      ..color = fill
+      ..color = theme.getSecondary
       ..style = PaintingStyle.fill;
     Rect rect = Rect.fromLTRB(-padding, 0, size.width + padding, size.height);
 
@@ -335,6 +268,7 @@ class ButtonPopup extends CustomPainter {
 class WeatherCard extends StatelessWidget {
   final String title;
   final String temperature;
+  final CustomTheme theme;
   final ColorCode weather;
   final void Function()? onTap;
 
@@ -343,6 +277,7 @@ class WeatherCard extends StatelessWidget {
     required this.title,
     required this.temperature,
     required this.weather,
+    required this.theme,
     this.onTap,
   });
 
@@ -415,11 +350,11 @@ class WeatherCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Affiche l'heure, l'icon et la température souhaité
-              Text(title, style: CustomFonts.weatherCard()),
+              Text(title, style: theme.weatherCard()),
               const SizedBox(height: 12),
               SizedBox(width: 60, height: 60, child: getCorrectIcon()),
               const SizedBox(height: 12),
-              Text(temperature, style: CustomFonts.weatherCard()),
+              Text(temperature, style: theme.weatherCard()),
             ],
           ),
         ),
@@ -432,12 +367,14 @@ class WeatherCard extends StatelessWidget {
   Crée un bouton switch personalisé
 */
 class SwitchLine extends StatelessWidget {
+  final CustomTheme theme;
   final double width;
   final bool day; // Reçoit l’état du parent
   final VoidCallback onTap; // Callback pour informer le parent du tap
 
   const SwitchLine({
     super.key,
+    required this.theme,
     required this.width,
     required this.day,
     required this.onTap,
@@ -456,8 +393,8 @@ class SwitchLine extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("DAY", style: CustomFonts.customSwitch(day)),
-                Text("WEEK", style: CustomFonts.customSwitch(!day)),
+                Text("DAY", style: theme.customSwitch(day)),
+                Text("WEEK", style: theme.customSwitch(!day)),
               ],
             ),
             const SizedBox(height: 5),
@@ -482,13 +419,13 @@ class SwitchLine extends StatelessWidget {
 class PopupDisplayInfos extends StatefulWidget {
   final String title;
   final Map<String, String> content;
-  final PopupColorCode? style;
+  final PopupColorCode style;
 
   const PopupDisplayInfos({
     super.key,
     required this.title,
     required this.content,
-    this.style,
+    required this.style,
   });
 
   @override
@@ -503,19 +440,9 @@ class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
       text: TextSpan(
         children: [
           // Affichage du label
-          TextSpan(
-            text: label,
-            style:
-                widget.style?.getLabelStyle ??
-                CustomFonts.popupLabel(ColorCode.UNKNOW),
-          ),
+          TextSpan(text: label, style: widget.style.getLabelStyle),
           // Sur la même ligne affichage de la variable
-          TextSpan(
-            text: variable,
-            style:
-                widget.style?.getVariableStyle ??
-                CustomFonts.popupLabel(ColorCode.UNKNOW),
-          ),
+          TextSpan(text: variable, style: widget.style.getVariableStyle),
         ],
       ),
     );
@@ -524,7 +451,7 @@ class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: widget.style?.getBackgroundColor ?? Colors.white,
+      backgroundColor: widget.style.getBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -534,19 +461,12 @@ class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
             children: [
               // Crée un cadre et place à l'interieur les données passé en paramètre
               CustomPaint(
-                painter: FrameRounded(
-                  widget.style?.getFrameColor ?? Colors.black,
-                ),
+                painter: FrameRounded(widget.style.getFrameColor),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const SizedBox(height: 15),
-                    Text(
-                      widget.title,
-                      style:
-                          widget.style?.getTitleStyle ??
-                          CustomFonts.popupTitle(ColorCode.UNKNOW),
-                    ),
+                    Text(widget.title, style: widget.style.getTitleStyle),
                     const SizedBox(height: 16),
                     Column(
                       children: [
@@ -569,15 +489,13 @@ class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
                 child: SizedBox(
                   width: double.infinity,
                   child: CustomPaint(
-                    painter: ButtonPopup(
-                      fill: widget.style?.getButtonColor ?? Colors.black,
-                    ),
+                    painter: ButtonPopup(fill: widget.style.getButtonColor),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Center(
                         child: Text(
                           "OK",
-                          style: widget.style?.getButtonTextColor,
+                          style: widget.style.getButtonTextColor,
                         ),
                       ),
                     ),
@@ -662,6 +580,9 @@ class CityAutoComplete<T> extends StatelessWidget {
   }
 }
 
+/*
+  Crée un popup de chargement
+*/
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
 
@@ -704,6 +625,80 @@ class LoadingScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/*
+  Crée un menu déroulant personalisé
+*/
+class FloatingMenu extends StatefulWidget {
+  final CustomTheme theme;
+  const FloatingMenu(this.theme, {super.key});
+
+  @override
+  State<FloatingMenu> createState() => _FloatingMenuState();
+}
+
+class _FloatingMenuState extends State<FloatingMenu> {
+  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
+  bool _menuOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: MenuAnchor(
+        style: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(widget.theme.getSecondary),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          elevation: WidgetStateProperty.all(6),
+        ),
+        onOpen: () => setState(() => _menuOpen = true),
+        onClose: () => setState(() => _menuOpen = false),
+        alignmentOffset: const Offset(-80, 0),
+        builder: (context, controller, child) {
+          return TextButton(
+            focusNode: _buttonFocusNode,
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.theme.getButton,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                _menuOpen ? Icons.close : Icons.menu,
+                size: 30,
+                color: Colors.white,
+              ),
+            ),
+          );
+        },
+        childFocusNode: _buttonFocusNode,
+        menuChildren: <Widget>[
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.person),
+            child: const Text("Accueil"),
+            onPressed: () {},
+          ),
+
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.person),
+            child: const Text("Rapel"),
+            onPressed: () {},
+          ),
+
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.person),
+            child: const Text("Liste course"),
+            onPressed: () {},
+          ),
+        ],
       ),
     );
   }

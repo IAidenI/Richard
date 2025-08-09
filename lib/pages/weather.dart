@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:richard/ui/customFonts.dart';
+import 'package:richard/ui/theme.dart';
 import '../modeles/weatherAPI.dart';
 import '../assets/constants.dart';
 import '../ui/customUI.dart';
@@ -15,11 +16,10 @@ class Weather extends StatefulWidget {
 class _WeatherState extends State<Weather> {
   late final String _date;
 
+  CustomTheme theme = CustomTheme(ColorCode.UNKNOW);
+
   final Weatherapi _weather = Weatherapi();
   ColorCode _currentWeather = ColorCode.UNKNOW;
-
-  AssetImage _background = AssetImage("assets/background/no_signal.png");
-  AssetImage _backgroundMenu = AssetImage("assets/menu/no_signal.png");
 
   int _reposition = 0;
 
@@ -52,51 +52,32 @@ class _WeatherState extends State<Weather> {
     await _weather.fetchWeather();
     setState(() {
       _currentWeather = weatherCode[_weather.getWeather] ?? ColorCode.UNKNOW;
-      switch (_currentWeather) {
-        case ColorCode.SUN:
-          _background = AssetImage("assets/background/sun.png");
-          _backgroundMenu = AssetImage("assets/menu/sun.png");
-          break;
-        case ColorCode.SOME_CLOUDS:
-          _background = AssetImage("assets/background/some_clouds.png");
-          _backgroundMenu = AssetImage("assets/menu/some_clouds.png");
-
-          break;
-        case ColorCode.CLOUDS:
-          _background = AssetImage("assets/background/clouds.png");
-          _backgroundMenu = AssetImage("assets/menu/clouds.png");
-
-          break;
-        case ColorCode.RAIN:
-          _background = AssetImage("assets/background/rain.png");
-          _backgroundMenu = AssetImage("assets/menu/rain.png");
-
-          break;
-        case ColorCode.SNOW:
-          _background = AssetImage("assets/background/snow.png");
-          _backgroundMenu = AssetImage("assets/menu/snow.png");
-
-          break;
-        case ColorCode.THUNDERSTORM:
-          _background = AssetImage("assets/background/thunderstorm.png");
-          _backgroundMenu = AssetImage("assets/menu/thunderstorm.png");
-
-          break;
-        case ColorCode.HAIL:
-          _background = AssetImage("assets/background/hail.png");
-          _backgroundMenu = AssetImage("assets/menu/hail.png");
-
-          break;
-        case ColorCode.UNKNOW:
-          _background = AssetImage("assets/background/no_signal.png");
-          _backgroundMenu = AssetImage("assets/menu/no_signal.png");
-
-          break;
-      }
-      _isLoaded = true;
+      theme = CustomTheme(_currentWeather);
+      _isLoaded = _weather.isDataOk;
       _reposition++; // Rebuild l'autocomplete
     });
     _weather.printData();
+  }
+
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> _buildInfoDisplayer(
+    String data, {
+    SnackBarAction? action,
+    EdgeInsets? margin,
+    Duration? duration,
+  }) {
+    return ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        action: action,
+        content: Center(child: Text(data)),
+        duration: duration ?? const Duration(seconds: 1),
+        margin:
+            margin ?? const EdgeInsets.symmetric(horizontal: 80, vertical: 20),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+      ),
+    );
   }
 
   @override
@@ -117,7 +98,7 @@ class _WeatherState extends State<Weather> {
                   // Affichage de l'image de fond
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: _background,
+                      image: theme.getBackground,
                       fit: BoxFit.fill,
                     ),
                   ),
@@ -137,7 +118,7 @@ class _WeatherState extends State<Weather> {
                               child: CustomPaint(
                                 painter: FrameTitle(
                                   padding: 16.0,
-                                  weather: _currentWeather,
+                                  theme: theme,
                                 ),
                                 child: Center(
                                   // Si les données sont chargé affichage du nom de la ville
@@ -147,10 +128,7 @@ class _WeatherState extends State<Weather> {
                                           key: ValueKey(_reposition),
                                           currentData: _weather.getCodeInsee,
                                           dataList: cityTable,
-                                          style: CustomFonts.cityStyle(
-                                            _currentWeather,
-                                            _isLoaded,
-                                          ),
+                                          style: theme.cityStyle(_isLoaded),
                                           onSelected: (City selectedCity) {
                                             if (_weather.getCodeInsee !=
                                                 selectedCity.getCodeInsee) {
@@ -163,10 +141,7 @@ class _WeatherState extends State<Weather> {
                                         )
                                       : Text(
                                           "Vérifiez votre connexion internet",
-                                          style: CustomFonts.cityStyle(
-                                            _currentWeather,
-                                            _isLoaded,
-                                          ),
+                                          style: theme.cityStyle(_isLoaded),
                                         ),
                                 ),
                               ),
@@ -179,63 +154,75 @@ class _WeatherState extends State<Weather> {
                                   (_isLoaded ? 165 : 295) / 2 -
                                   70,
                               child: Material(
-                                color: PopupColorCode(
-                                  _currentWeather,
-                                ).getButtonColor,
+                                color: PopupColorCode(theme).getButtonColor,
                                 shape: const CircleBorder(),
                                 child: InkWell(
                                   customBorder: const CircleBorder(),
                                   onTap: () {
+                                    final CodeErrorAPI ret = _weather.flag;
                                     // Vérifie si c'est pas déjà sur la position gps
-                                    if (!_weather.isPositionGPS) {
+                                    if (!_weather.isPositionGPS &&
+                                        ret == CodeErrorAPI.GEOLOC_OK) {
                                       _weather.enableGPS;
                                       _loadWeather();
 
                                       // Affiche un message pour indiqué la le repositionnement
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Center(
-                                            child: const Text("Position GPS"),
-                                          ),
-                                          duration: const Duration(seconds: 1),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 100,
-                                            vertical: 20,
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10.0,
-                                            ),
-                                          ),
-                                        ),
-                                      );
+                                      _buildInfoDisplayer("Position GPS");
                                       // Sinon affiche un message
                                     } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Center(
-                                            child: const Text(
-                                              "Déjà sur la position GPS",
+                                      switch (ret) {
+                                        case CodeErrorAPI
+                                            .GEOLOC_SERVICE_DISABLE:
+                                          _buildInfoDisplayer(
+                                            "Service désactiver",
+                                          );
+                                          break;
+                                        case CodeErrorAPI
+                                            .GEOLOC_PERMISSION_DENIED:
+                                          _buildInfoDisplayer(
+                                            "Permissons refusé",
+                                            action: SnackBarAction(
+                                              label: 'Settings',
+                                              onPressed: () {
+                                                Geolocator.openAppSettings();
+                                              },
                                             ),
-                                          ),
-                                          duration: const Duration(seconds: 1),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 80,
-                                            vertical: 20,
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10.0,
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 50,
+                                              vertical: 20,
                                             ),
-                                          ),
-                                        ),
-                                      );
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
+                                          );
+                                          break;
+                                        case CodeErrorAPI.GEOLOC_FOREVER_DENIED:
+                                          _buildInfoDisplayer(
+                                            "Permission refusé pour toujours",
+                                            action: SnackBarAction(
+                                              label: 'Settings',
+                                              onPressed: () {
+                                                Geolocator.openAppSettings();
+                                              },
+                                            ),
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 50,
+                                              vertical: 20,
+                                            ),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
+                                          );
+                                          break;
+                                        case CodeErrorAPI.GEOLOC_OK:
+                                          _buildInfoDisplayer(
+                                            "Déjà sur la position GPS",
+                                          );
+                                          break;
+                                        case CodeErrorAPI.DEFAULT:
+                                          _buildInfoDisplayer("ERROR");
+                                          break;
+                                      }
                                     }
                                   },
                                   // Affiche l'icon de gps
@@ -265,7 +252,7 @@ class _WeatherState extends State<Weather> {
                           height: 200,
 
                           child: CustomPaint(
-                            painter: WeatherCircle(_currentWeather),
+                            painter: WeatherCircle(theme),
                             child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -276,25 +263,19 @@ class _WeatherState extends State<Weather> {
                                     _isLoaded
                                         ? _weather.getWeatherDescription
                                         : "Inconnu",
-                                    style: CustomFonts.weatherStyle(
-                                      _currentWeather,
-                                    ),
+                                    style: theme.weatherStyle(),
                                   ),
                                   // Température
                                   Text(
                                     _isLoaded ? _weather.getTemperature : "--°",
-                                    style: CustomFonts.temperatureStyle(
-                                      _currentWeather,
-                                    ),
+                                    style: theme.temperatureStyle(),
                                   ),
                                   // Humidité + Vent
                                   Text(
                                     _isLoaded
                                         ? "H : ${_weather.getHumidity} - V : ${_weather.getWind}"
                                         : "H : --% - V : --km/h",
-                                    style: CustomFonts.moreInfosStyle(
-                                      _currentWeather,
-                                    ),
+                                    style: theme.moreInfosStyle(),
                                   ),
                                 ],
                               ),
@@ -309,10 +290,7 @@ class _WeatherState extends State<Weather> {
                         left: 0,
                         right: 0,
                         child: Center(
-                          child: Text(
-                            _date,
-                            style: CustomFonts.dateStyle(_currentWeather),
-                          ),
+                          child: Text(_date, style: theme.dateStyle()),
                         ),
                       ),
                     ],
@@ -328,7 +306,7 @@ class _WeatherState extends State<Weather> {
                   // Affichage de l'image de fond
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: _backgroundMenu,
+                      image: theme.getBackgroundMenu,
                       fit: BoxFit.fill,
                     ),
                   ),
@@ -336,6 +314,7 @@ class _WeatherState extends State<Weather> {
                     children: [
                       // Affiche le switch DAY/WEEK
                       SwitchLine(
+                        theme: theme,
                         width: 200,
                         day: dayChoice,
                         onTap: () {
@@ -371,6 +350,7 @@ class _WeatherState extends State<Weather> {
                                 weather:
                                     weatherCode[h.getWeather] ??
                                     ColorCode.UNKNOW,
+                                theme: theme,
                                 onTap: () {
                                   showDialog(
                                     context: context,
@@ -408,7 +388,7 @@ class _WeatherState extends State<Weather> {
                                                   .getDailyData[index]
                                                   .getFormattedProbaFog,
                                       },
-                                      style: PopupColorCode(_currentWeather),
+                                      style: PopupColorCode(theme),
                                     ),
                                   );
                                 },
@@ -423,6 +403,8 @@ class _WeatherState extends State<Weather> {
               ),
             ],
           ),
+
+          FloatingMenu(theme),
 
           // Affichage d'un widget d'attente
           _weather.isReady

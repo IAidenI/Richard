@@ -14,11 +14,19 @@ curl "https://api.meteo-concept.com/api/forecast/nextHours?token=${TOKEN}&insee=
 curl "https://api.meteo-concept.com/api/forecast/daily?token=${TOKEN}&insee=31395" | jq '.forecast[] | {datetime, day, tmin, tmax, probarain, weather, wind10m, gust10m}'
 */
 
+enum CodeErrorAPI {
+  GEOLOC_SERVICE_DISABLE,
+  GEOLOC_PERMISSION_DENIED,
+  GEOLOC_FOREVER_DENIED,
+  GEOLOC_OK,
+  DEFAULT,
+}
+
 class Weatherapi {
   // Données pour la connexion à l'api
   static const String _token =
       "fd59e845bda91b5102cd99cf81c99783a28cfcff98d683dc1f9f44c7c60e3c33";
-  String _insee = "75056"; // Par défaut la localisation est Muret
+  String _insee = "75056"; // Par défaut la localisation est Paris
   static const String _url = "https://api.meteo-concept.com/api";
   static const Map<When, String> _endpoints = {
     When.NOW: "/forecast/nextHours",
@@ -40,12 +48,14 @@ class Weatherapi {
   Position? _gpsPosition;
   Position? get getGPSPosition => _gpsPosition;
   bool _enableGPS = true;
+  CodeErrorAPI flag = CodeErrorAPI.DEFAULT;
 
   bool get isPositionGPS => _enableGPS;
   bool get enableGPS => _enableGPS = true;
   bool get disableGPS => _enableGPS = false;
 
   bool isReady = false;
+  bool isDataOk = false;
 
   String? _cityName;
 
@@ -128,6 +138,7 @@ class Weatherapi {
 
   // Première instance récupèration de la position gps
   Future<void> initAPI() async {
+    print("[ DEBUG ] AAAAAAAAA calculate gps");
     _gpsPosition = await _determinatePosition();
   }
 
@@ -146,12 +157,13 @@ class Weatherapi {
       await fetchWeatherHourly();
       await fetchWeatherDaily();
       print("[ OK ] Data feched.");
-      isReady = true;
+      isDataOk = true;
       print("");
       print("===========================================");
     } on Exception catch (_) {
-      isReady = true;
+      isDataOk = false;
     }
+    isReady = true;
   }
 
   Future<Position?> _determinatePosition() async {
@@ -159,50 +171,40 @@ class Weatherapi {
     LocationPermission permissions;
 
     // Vérifie si la géolocalisation est disponible
-    print("[ DEBUG ] Service enable...");
     serviceEnable = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnable) {
-      print("[ DEBUG ] Service enable : ERROR.");
+      flag = CodeErrorAPI.GEOLOC_SERVICE_DISABLE;
       return null;
     }
-    print("[ DEBUG ] Service enable : OK.");
 
     // Vérifie et demande au besoin les permissions nécessaire
-    print("[ DEBUG ] Permission...");
     permissions = await Geolocator.checkPermission();
     if (permissions == LocationPermission.denied) {
-      print("[ DEBUG ] Requesting permission...");
       permissions = await Geolocator.requestPermission();
       if (permissions == LocationPermission.denied) {
-        print("[ DEBUG ] Permission : ERROR.");
+        flag = CodeErrorAPI.GEOLOC_PERMISSION_DENIED;
         return null;
       }
     }
-    print("[ DEBUG ] Permission : OK.");
 
-    print("[ DEBUG ] Denied forever...");
     if (permissions == LocationPermission.deniedForever) {
-      print("[ DEBUG ] Denied forever : ERROR.");
+      flag = CodeErrorAPI.GEOLOC_FOREVER_DENIED;
       return null;
     }
-    print("[ DEBUG ] Denied forever : OK.");
 
+    flag = CodeErrorAPI.GEOLOC_OK;
     return Geolocator.getCurrentPosition();
   }
 
   Future<void> fetchGPSToInsee() async {
-    print("[ DBUG ] Fetching GPS to Insee...");
     String url =
         "$_urlGPSInsee&lat=${_gpsPosition!.latitude}&lon=${_gpsPosition!.longitude}$_urlArguments";
-    print("[ DEBUG ] URL : $url");
 
     // Appele de l'api
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
-      print("[ DEBUG ] Decode : OK.");
       final json = jsonDecode(response.body);
       _insee = json.first['code'];
-      print("[ DEBUG ] Insee code found : $_insee");
     } else {
       throw Exception("Failed to load weather");
     }
@@ -424,8 +426,8 @@ class HourlyData implements WeatherEntry {
   @override
   String formattedTime() {
     String data;
-    if (hour == -2) {
-      data = "XXX";
+    if (hour == null) {
+      data = "--h";
     } else if (hour == -1) {
       data = "NOW";
     } else {

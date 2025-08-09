@@ -1,0 +1,341 @@
+import 'package:flutter/material.dart';
+import 'package:richard/assets/constants.dart';
+
+class CustomTheme {
+  final ColorCode currentWeather;
+
+  // Backgrounds
+  late final AssetImage _background;
+  late final AssetImage _backgroundMenu;
+
+  AssetImage get getBackground => _background;
+  AssetImage get getBackgroundMenu => _backgroundMenu;
+
+  // Thèmes
+  Color _primary = const Color.fromARGB(255, 109, 109, 109);
+  Color _secondary = const Color.fromARGB(255, 198, 198, 198);
+  Color _tertiary = const Color.fromARGB(60, 144, 138, 138);
+  Color _button = Color.fromARGB(255, 145, 145, 158);
+  Color _frame = Color.fromARGB(255, 0, 0, 0);
+
+  Color get getPrimary => _primary;
+  Color get getSecondary => _secondary;
+  Color get getTertiary => _tertiary;
+  Color get getButton => _button;
+  Color get getFrame => _frame;
+
+  CustomTheme(this.currentWeather) {
+    final file = _fileName();
+    _background = AssetImage("assets/background/$file.png");
+    _backgroundMenu = AssetImage("assets/menu/$file.png");
+
+    _setTheme();
+  }
+
+  String _fileName() {
+    switch (currentWeather) {
+      case ColorCode.SUN:
+        return "sun";
+      case ColorCode.SOME_CLOUDS:
+        return "some_clouds";
+      case ColorCode.CLOUDS:
+        return "clouds";
+      case ColorCode.RAIN:
+        return "rain";
+      case ColorCode.SNOW:
+        return "snow";
+      case ColorCode.THUNDERSTORM:
+        return "thunderstorm";
+      case ColorCode.HAIL:
+        return "hail";
+      case ColorCode.UNKNOW:
+        return "no_signal";
+    }
+  }
+
+  void _setTheme() {
+    _tertiary = const Color.fromARGB(60, 255, 255, 255);
+
+    switch (currentWeather) {
+      case ColorCode.SUN:
+        _primary = const Color.fromARGB(255, 68, 163, 220);
+        _secondary = const Color.fromARGB(255, 199, 234, 255);
+        _button = Color.fromARGB(255, 56, 52, 223);
+        _frame = Color.fromARGB(255, 32, 84, 116);
+        break;
+      case ColorCode.SOME_CLOUDS:
+        _primary = const Color.fromARGB(255, 232, 124, 132);
+        _secondary = const Color.fromARGB(255, 248, 199, 200);
+        _button = Color.fromARGB(255, 225, 93, 99);
+        _frame = Color.fromARGB(255, 177, 50, 59);
+        break;
+      case ColorCode.CLOUDS:
+        _primary = const Color.fromARGB(255, 32, 204, 178);
+        _secondary = const Color.fromARGB(255, 168, 255, 242);
+        _button = Color.fromARGB(255, 62, 198, 210);
+        _frame = Color.fromARGB(255, 27, 94, 84);
+        break;
+      case ColorCode.RAIN:
+        _primary = const Color.fromARGB(255, 32, 204, 178);
+        _secondary = const Color.fromARGB(255, 168, 255, 242);
+        _button = Color.fromARGB(255, 62, 198, 210);
+        _frame = Color.fromARGB(255, 27, 94, 84);
+        break;
+      case ColorCode.SNOW:
+        _primary = Color.fromARGB(255, 66, 175, 209);
+        _secondary = const Color.fromARGB(255, 148, 230, 255);
+        _button = Color.fromARGB(255, 52, 118, 223);
+        _frame = Color.fromARGB(255, 0, 54, 125);
+        break;
+      case ColorCode.THUNDERSTORM:
+        _primary = const Color.fromARGB(255, 72, 44, 92);
+        _secondary = const Color.fromARGB(255, 198, 171, 216);
+        _button = Color.fromARGB(255, 126, 52, 223);
+        _frame = Color.fromARGB(255, 92, 30, 138);
+        break;
+      case ColorCode.HAIL:
+        _primary = const Color.fromARGB(255, 72, 68, 76);
+        _secondary = const Color.fromARGB(255, 221, 221, 221);
+        _button = Color.fromARGB(255, 145, 145, 158);
+        _frame = Color.fromARGB(255, 117, 108, 124);
+        break;
+      case ColorCode.UNKNOW:
+        break;
+    }
+  }
+
+  // =================================================
+  // =====---------------------------------------=====
+  // =====--------   FONTS PRESONALISE   --------=====
+  // =====---------------------------------------=====
+  // =================================================
+
+  /*
+    Fonts pour le temps du jour
+  */
+  TextStyle cityStyle(bool isLoaded) {
+    return TextStyle(
+      fontFamily: 'BebasNeue',
+      fontSize: isLoaded ? 25 : 25,
+      color: isLoaded
+          ? const Color.fromARGB(255, 110, 110, 110)
+          : const Color.fromARGB(255, 160, 146, 20),
+    );
+  }
+
+  TextStyle weatherStyle() {
+    TextStyle template = TextStyle(
+      fontFamily: 'OpenSans',
+      fontSize: 15,
+      color: const Color.fromARGB(255, 234, 217, 217),
+    );
+
+    // Permet de modifier la couleur en fonction de la météo du jour
+    if (currentWeather == ColorCode.CLOUDS) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    } else if (currentWeather == ColorCode.RAIN) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    } else if (currentWeather == ColorCode.SNOW) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    }
+    return template;
+  }
+
+  TextStyle temperatureStyle() {
+    TextStyle template = TextStyle(
+      fontFamily: 'Rubik',
+      fontWeight: FontWeight.w700,
+      fontSize: 75,
+      color: Colors.white,
+    );
+
+    // Permet de modifier la couleur en fonction de la météo du jour
+    if (currentWeather == ColorCode.CLOUDS) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    } else if (currentWeather == ColorCode.RAIN) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    }
+    return template;
+  }
+
+  TextStyle moreInfosStyle() {
+    TextStyle template = TextStyle(
+      fontFamily: 'Raleway',
+      fontWeight: FontWeight.w900,
+      fontSize: 11,
+      color: const Color.fromARGB(255, 234, 217, 217),
+    );
+
+    // Permet de modifier la couleur en fonction de la météo du jour
+    if (currentWeather == ColorCode.CLOUDS) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    } else if (currentWeather == ColorCode.RAIN) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    } else if (currentWeather == ColorCode.SNOW) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 240, 236, 236),
+      );
+    }
+    return template;
+  }
+
+  TextStyle dateStyle() {
+    TextStyle template = TextStyle(
+      fontFamily: 'OpenSans',
+      fontWeight: FontWeight.w600,
+      fontSize: 15,
+      color: const Color.fromARGB(255, 244, 232, 232),
+    );
+
+    // Permet de modifier la couleur en fonction de la météo du jour
+    if (currentWeather == ColorCode.SNOW) {
+      template = template.copyWith(
+        color: const Color.fromARGB(255, 184, 184, 184),
+      );
+    }
+    return template;
+  }
+
+  /*
+    Fonts pour le menu indiquant les précvision météo
+  */
+  TextStyle customSwitch(bool on) {
+    return TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 15,
+      color: on ? Colors.white : const Color.fromARGB(225, 104, 76, 124),
+    );
+  }
+
+  TextStyle weatherCard() {
+    return TextStyle(
+      fontFamily: 'BebasNeue',
+      fontSize: 20,
+      color: const Color.fromARGB(255, 233, 228, 228),
+    );
+  }
+
+  /*
+    Fonts pour les informations supplémentaires
+  */
+  TextStyle popupTitle() {
+    TextStyle template = TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    );
+
+    // Permet de modifier la couleur en fonction de la météo du jour
+    switch (currentWeather) {
+      case ColorCode.SUN:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 65, 138, 182),
+        );
+        break;
+      case ColorCode.SOME_CLOUDS:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 237, 85, 97),
+        );
+        break;
+      case ColorCode.CLOUDS:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 34, 141, 125),
+        );
+        break;
+      case ColorCode.RAIN:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 34, 141, 125),
+        );
+        break;
+      case ColorCode.SNOW:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 30, 40, 138),
+        );
+        break;
+      case ColorCode.THUNDERSTORM:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 92, 30, 138),
+        );
+        break;
+      case ColorCode.HAIL:
+        template = template.copyWith(
+          color: const Color.fromARGB(255, 117, 108, 124),
+        );
+        break;
+      case ColorCode.UNKNOW:
+        template = template.copyWith(color: Colors.black);
+        break;
+    }
+    return template;
+  }
+
+  TextStyle popupLabel() {
+    return TextStyle(
+      fontSize: 15,
+      color: Colors.black,
+      fontWeight: FontWeight.w400,
+    );
+  }
+
+  TextStyle popupVariable() {
+    return TextStyle(
+      fontSize: 15,
+      color: Colors.black,
+      fontWeight: FontWeight.bold,
+    );
+  }
+
+  TextStyle textButtonStyle() {
+    return TextStyle(
+      fontFamily: 'BebasNeue',
+      fontSize: 20,
+      color: Colors.white,
+    );
+  }
+}
+
+// Permet de selectionner les bonnes couleurs en fonction
+// de la météo pour le popup des informations supplémentaires
+class PopupColorCode {
+  final CustomTheme theme;
+
+  late TextStyle _styleTitle;
+  late TextStyle _styleLabel;
+  late TextStyle _styleVariable;
+  late Color _frame;
+  late Color _background;
+  late Color _colorButton;
+  late TextStyle _colorButtonText;
+
+  PopupColorCode(this.theme) {
+    _styleTitle = theme.popupTitle();
+    _styleLabel = theme.popupLabel();
+    _styleVariable = theme.popupVariable();
+    _frame = theme.getFrame;
+    _background = theme.getSecondary;
+    _colorButton = theme.getButton;
+    _colorButtonText = theme.textButtonStyle();
+  }
+
+  TextStyle get getTitleStyle => _styleTitle;
+  TextStyle get getLabelStyle => _styleLabel;
+  TextStyle get getVariableStyle => _styleVariable;
+  Color get getFrameColor => _frame;
+  Color get getBackgroundColor => _background;
+  Color get getButtonColor => _colorButton;
+  TextStyle get getButtonTextColor => _colorButtonText;
+}
