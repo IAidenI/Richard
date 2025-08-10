@@ -16,7 +16,7 @@ class Weather extends StatefulWidget {
 class _WeatherState extends State<Weather> {
   late final String _date;
 
-  CustomTheme theme = CustomTheme(ColorCode.UNKNOW);
+  WeatherTheme theme = WeatherTheme(ColorCode.UNKNOW);
 
   final Weatherapi _weather = Weatherapi();
   ColorCode _currentWeather = ColorCode.UNKNOW;
@@ -52,7 +52,7 @@ class _WeatherState extends State<Weather> {
     await _weather.fetchWeather();
     setState(() {
       _currentWeather = weatherCode[_weather.getWeather] ?? ColorCode.UNKNOW;
-      theme = CustomTheme(_currentWeather);
+      theme = WeatherTheme(_currentWeather);
       _isLoaded = _weather.isDataOk;
       _reposition++; // Rebuild l'autocomplete
     });
@@ -404,7 +404,7 @@ class _WeatherState extends State<Weather> {
             ],
           ),
 
-          FloatingMenu(theme),
+          Align(alignment: Alignment.bottomRight, child: FloatingMenu(theme)),
 
           // Affichage d'un widget d'attente
           _weather.isReady

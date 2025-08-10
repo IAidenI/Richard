@@ -1,8 +1,15 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:richard/assets/constants.dart';
 import 'package:richard/modeles/weatherAPI.dart';
 import 'package:richard/ui/theme.dart';
+
+// __        _______    _  _____ _   _ _____ ____
+// \ \      / / ____|  / \|_   _| | | | ____|  _ \
+//  \ \ /\ / /|  _|   / _ \ | | | |_| |  _| | |_) |
+//   \ V  V / | |___ / ___ \| | |  _  | |___|  _ <
+//    \_/\_/  |_____/_/   \_\_| |_| |_|_____|_| \_\
 
 // ==================================
 // ====-------  DARWINGS  -------====
@@ -12,7 +19,7 @@ import 'package:richard/ui/theme.dart';
   Crée un rond de couleur en fonction de la météo du jour
 */
 class WeatherCircle extends CustomPainter {
-  final CustomTheme theme;
+  final WeatherTheme theme;
 
   WeatherCircle(this.theme);
 
@@ -145,7 +152,7 @@ class FrameRounded extends CustomPainter {
 */
 class FrameTitle extends CustomPainter {
   final double padding;
-  final CustomTheme theme;
+  final WeatherTheme theme;
   Color border = const Color.fromARGB(255, 140, 140, 140);
   Color shadowColor = const Color.fromARGB(127, 162, 162, 162);
 
@@ -268,7 +275,7 @@ class ButtonPopup extends CustomPainter {
 class WeatherCard extends StatelessWidget {
   final String title;
   final String temperature;
-  final CustomTheme theme;
+  final WeatherTheme theme;
   final ColorCode weather;
   final void Function()? onTap;
 
@@ -367,7 +374,7 @@ class WeatherCard extends StatelessWidget {
   Crée un bouton switch personalisé
 */
 class SwitchLine extends StatelessWidget {
-  final CustomTheme theme;
+  final WeatherTheme theme;
   final double width;
   final bool day; // Reçoit l’état du parent
   final VoidCallback onTap; // Callback pour informer le parent du tap
@@ -634,7 +641,7 @@ class LoadingScreen extends StatelessWidget {
   Crée un menu déroulant personalisé
 */
 class FloatingMenu extends StatefulWidget {
-  final CustomTheme theme;
+  final WeatherTheme theme;
   const FloatingMenu(this.theme, {super.key});
 
   @override
@@ -642,63 +649,268 @@ class FloatingMenu extends StatefulWidget {
 }
 
 class _FloatingMenuState extends State<FloatingMenu> {
-  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
   bool _menuOpen = false;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomRight,
-      child: MenuAnchor(
-        style: MenuStyle(
-          backgroundColor: WidgetStateProperty.all(widget.theme.getSecondary),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          elevation: WidgetStateProperty.all(6),
+    return MenuAnchor(
+      style: MenuStyle(
+        backgroundColor: WidgetStateProperty.all(widget.theme.getSecondary),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        onOpen: () => setState(() => _menuOpen = true),
-        onClose: () => setState(() => _menuOpen = false),
-        alignmentOffset: const Offset(-80, 0),
-        builder: (context, controller, child) {
-          return TextButton(
-            focusNode: _buttonFocusNode,
-            onPressed: () =>
-                controller.isOpen ? controller.close() : controller.open(),
-            child: Container(
-              decoration: BoxDecoration(
-                color: widget.theme.getButton,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                _menuOpen ? Icons.close : Icons.menu,
-                size: 30,
-                color: Colors.white,
-              ),
+        elevation: WidgetStateProperty.all(6),
+      ),
+      onOpen: () => setState(() => _menuOpen = true),
+      onClose: () => setState(() => _menuOpen = false),
+      alignmentOffset: const Offset(-80, 0),
+      builder: (context, controller, child) {
+        return TextButton(
+          onPressed: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+          child: Container(
+            decoration: BoxDecoration(
+              color: widget.theme.getButton,
+              shape: BoxShape.circle,
             ),
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              _menuOpen ? Icons.close : Icons.menu,
+              size: 30,
+              color: Colors.white,
+            ),
+          ),
+        );
+      },
+      menuChildren: <Widget>[
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.person),
+          child: const Text("Météo"),
+          onPressed: () {},
+        ),
+
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.person),
+          child: const Text("Rapel"),
+          onPressed: () {},
+        ),
+
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.person),
+          child: const Text("Liste course"),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+}
+
+//   ____    _    __  __ _____ ____
+//  / ___|  / \  |  \/  | ____/ ___|
+// | |  _  / _ \ | |\/| |  _| \___ \
+// | |_| |/ ___ \| |  | | |___ ___) |
+//  \____/_/   \_\_|  |_|_____|____/
+
+// ==================================
+// ====-------  DARWINGS  -------====
+// ==================================
+/*
+  Permet de dessiner un petit rond plein pour les settings
+*/
+class RoundButton extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint round = Paint()
+      ..color = Colors.amber
+      ..style = PaintingStyle.fill;
+
+    Offset center = Offset(size.width / 2, size.height / 2);
+    double radius = size.width / 2;
+
+    canvas.drawCircle(center, radius, round);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
+
+/*
+  Permet de dessiner une grille dont les dimenssions sont en paramètres
+*/
+class GridPainter extends CustomPainter {
+  GridPainter({required this.cell});
+
+  final double cell;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Crée les grosses bordures
+    final minorLinePaint = Paint()
+      ..color = Colors.white54
+      ..strokeWidth = 0.6;
+    // Crée les petites bordures
+    final majorLinePaint = Paint()
+      ..color = Colors.white70
+      ..strokeWidth = 1.0;
+
+    // Lignes verticales
+    for (double x = 0; x <= size.width; x += cell) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        (x / cell) % 5 == 0 ? majorLinePaint : minorLinePaint,
+      );
+    }
+    // Lignes horizontales
+    for (double y = 0; y <= size.height; y += cell) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        (y / cell) % 5 == 0 ? majorLinePaint : minorLinePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant GridPainter old) => old.cell != cell;
+}
+
+/*
+  Permet de dessiner une cellule (dans la grille de GridPainter)
+  à un emplacement passé en paramètre
+*/
+class CellPaint extends CustomPainter {
+  final List<Offset> positions;
+  final double cellDimensions;
+
+  CellPaint({
+    super.repaint,
+    required this.positions,
+    required this.cellDimensions,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Crée une cellule
+    Paint cell = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    print("[ DEBUG ] Running");
+    // Permet de peindre l'historique des cellules
+    for (var position in positions) {
+      // Calcule la position de la cellule
+      Rect rect = Rect.fromLTWH(
+        position.dx,
+        position.dy,
+        cellDimensions,
+        cellDimensions,
+      );
+
+      print(
+        "[ DEBUG ] Painting $cellDimensions len cell at : (X=${position.dx};Y=${position.dy})",
+      );
+      // Peint la cellule
+      canvas.drawRect(rect, cell);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CellPaint oldDelegate) {
+    // Si la liste à changer alors repeindre les cellules
+    Function eq = const ListEquality().equals;
+    return !eq(oldDelegate.positions, positions);
+  }
+}
+
+// ===================================================
+// ====-------  CUSTOM EXISTING COMPONANT  -------====
+// ===================================================
+
+// ===============================
+// ====-------  POPUP  -------====
+// ===============================
+/*
+  Permet d'obtenir un bouton personaliser pour les settings
+*/
+class SettingsMenu extends StatelessWidget {
+  const SettingsMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: RoundButton(),
+      child: SizedBox(
+        width: 30,
+        height: 30,
+        child: Icon(Icons.settings, color: Colors.white),
+      ),
+    );
+  }
+}
+
+// ==============================
+// ====-------  GAME  -------====
+// ==============================
+/*
+  Permet de déterminer la position de tap sur la grille généré
+  et dessine un cellule à cette emplacement
+*/
+class GridZoom extends StatefulWidget {
+  final double cell;
+  const GridZoom({super.key, required this.cell});
+
+  @override
+  State<GridZoom> createState() => _GridZoomState();
+}
+
+class _GridZoomState extends State<GridZoom> {
+  List<Offset> cellPositions =
+      []; // Permet d'avoir un historique des cellules et donc de garder d'afficher les cellules peintes
+
+  @override
+  Widget build(BuildContext context) {
+    // InteractiveViewer permet de se déplacer et zoomer dans un widget (ici la grille)
+    return InteractiveViewer(
+      constrained: false,
+      boundaryMargin: const EdgeInsets.all(200),
+      minScale: 0.5,
+      maxScale: 3,
+      child: GestureDetector(
+        // Détecte chaque clique dans la grille et détermine sa position
+        onTapDown: (TapDownDetails details) {
+          print("[ DEBUG ] local position : ${details.localPosition}");
+          // Convertit la position en int (ex X=28.9 - Y=34.2 => X=20.0 Y=30.0) affine de faire les calculs en backend avec une grille plus petite
+          Offset pos = Offset(
+            (details.localPosition.dx ~/ widget.cell).toDouble() *
+                widget
+                    .cell, // Sans widget.cell si le doit est sur X=1 - Y=1 il sera interprété
+            (details.localPosition.dy ~/ widget.cell).toDouble() *
+                widget
+                    .cell, // comme 1px - 1px au lieu de la case 1-1, donc widget.cell permet de convertir
           );
+          print("[ DEBUG ] X = ${pos.dx} - Y = ${pos.dy}");
+          setState(() {
+            print("[ DEBUG ] cellPositions : $cellPositions");
+            if (!cellPositions.contains(pos)) {
+              print("[ DEBUG ] add $pos");
+              cellPositions = List.of(cellPositions)
+                ..add(
+                  pos,
+                ); // Copie l'ancienne liste dans une nouvelle instance et assigne cette nouvelle liste à l'ancienne pour que le shouldRepaint détécte une nouvelle liste
+            }
+          });
         },
-        childFocusNode: _buttonFocusNode,
-        menuChildren: <Widget>[
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.person),
-            child: const Text("Accueil"),
-            onPressed: () {},
+        child: CustomPaint(
+          size: const Size(200, 200),
+          painter: GridPainter(cell: widget.cell),
+          foregroundPainter: CellPaint(
+            positions: cellPositions,
+            cellDimensions: widget.cell,
           ),
-
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.person),
-            child: const Text("Rapel"),
-            onPressed: () {},
-          ),
-
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.person),
-            child: const Text("Liste course"),
-            onPressed: () {},
-          ),
-        ],
+        ),
       ),
     );
   }

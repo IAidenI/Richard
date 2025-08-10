@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:richard/assets/constants.dart';
 
-class CustomTheme {
+class WeatherTheme {
   final ColorCode currentWeather;
 
   // Backgrounds
@@ -24,7 +24,7 @@ class CustomTheme {
   Color get getButton => _button;
   Color get getFrame => _frame;
 
-  CustomTheme(this.currentWeather) {
+  WeatherTheme(this.currentWeather) {
     final file = _fileName();
     _background = AssetImage("assets/background/$file.png");
     _backgroundMenu = AssetImage("assets/menu/$file.png");
@@ -105,9 +105,7 @@ class CustomTheme {
   }
 
   // =================================================
-  // =====---------------------------------------=====
   // =====--------   FONTS PRESONALISE   --------=====
-  // =====---------------------------------------=====
   // =================================================
 
   /*
@@ -306,12 +304,18 @@ class CustomTheme {
       color: Colors.white,
     );
   }
+
+  // ===========================================
+  // =====---------------------------------=====
+  // =====--------   GAMES THEME   --------=====
+  // =====---------------------------------=====
+  // ===========================================
 }
 
 // Permet de selectionner les bonnes couleurs en fonction
 // de la météo pour le popup des informations supplémentaires
 class PopupColorCode {
-  final CustomTheme theme;
+  final WeatherTheme theme;
 
   late TextStyle _styleTitle;
   late TextStyle _styleLabel;
@@ -338,4 +342,16 @@ class PopupColorCode {
   Color get getBackgroundColor => _background;
   Color get getButtonColor => _colorButton;
   TextStyle get getButtonTextColor => _colorButtonText;
+}
+
+class GameTheme {
+  final Color primary;
+  final Color secondary;
+
+  const GameTheme({required this.primary, required this.secondary});
+}
+
+/// Namespace qui regroupe tous les thèmes
+class GameThemes {
+  static const life = GameTheme(primary: Colors.black, secondary: Colors.white);
 }
