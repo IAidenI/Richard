@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:richard/pages/life.dart';
 import 'pages/weather.dart';
 
 void main() async {
@@ -19,6 +18,6 @@ class MyApp extends StatelessWidget {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return MaterialApp(home: Life());
+    return MaterialApp(home: Weather());
   }
 }

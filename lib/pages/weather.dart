@@ -404,8 +404,6 @@ class _WeatherState extends State<Weather> {
             ],
           ),
 
-          Align(alignment: Alignment.bottomRight, child: FloatingMenu(theme)),
-
           // Affichage d'un widget d'attente
           _weather.isReady
               ? const SizedBox.shrink()
@@ -413,7 +411,10 @@ class _WeatherState extends State<Weather> {
                   key: const ValueKey('loading'),
                   children: const [
                     // Bloque les interactions derrière + légère obscurité
-                    ModalBarrier(dismissible: false, color: Color(0x66000000)),
+                    ModalBarrier(
+                      dismissible: false,
+                      color: Color.fromARGB(100, 0, 0, 0),
+                    ),
                     // Ton popup centré et à taille fixe
                     Center(child: LoadingScreen()),
                   ],
