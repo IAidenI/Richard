@@ -1,4 +1,7 @@
 // Pour convertir le jour en français
+import 'dart:math';
+import 'dart:ui';
+
 const Map<String, String> DAY = {
   "Monday": "Lundi",
   "Tuesday": "Mardi",
@@ -300,3 +303,19 @@ const Map<String, String> cityTable = {
   "37261": "Tours",
   "78646": "Versailles",
 };
+
+//   ____    _    __  __ _____ ____
+//  / ___|  / \  |  \/  | ____/ ___|
+// | |  _  / _ \ | |\/| |  _| \___ \
+// | |_| |/ ___ \| |  | | |___ ___) |
+//  \____/_/   \_\_|  |_|_____|____/
+
+// Game ui settings
+const Size gridSize = Size(240, 240);
+
+// Game back settings
+const int littleGrid = 4;
+const int chunkSize = 8;
+
+const int livingCell = 8;
+const int deadCell = 0;

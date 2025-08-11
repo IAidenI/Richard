@@ -1,0 +1,163 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+const int kChunkSize = 128;
+const int kChunkMask = kChunkSize - 1; // 0..127
+const int kLog2Chunk = 7;              // 2^7 = 128
+
+int pack(int x, int y) => (x << 32) ^ (y & 0xffffffff);
+int chunkX(int x) => x >> kLog2Chunk;
+int chunkY(int y) => y >> kLog2Chunk;
+int localX(int x) => x & kChunkMask;
+int localY(int y) => y & kChunkMask;
+
+class Chunk {
+  // 0/1 par cellule
+  Uint8List state = Uint8List(kChunkSize * kChunkSize);
+  Uint8List next  = Uint8List(kChunkSize * kChunkSize);
+
+  // cache rendu
+  ui.Image? cachedImage;
+  bool imageDirty = true;
+
+  @inline
+  int idx(int lx, int ly) => ly * kChunkSize + lx;
+
+  void swap() {
+    final tmp = state;
+    state = next;
+    next = tmp;
+  }
+}
+
+class World {
+  final Map<int, Chunk> _chunks = {};
+  final Set<int> _dirty = {};           // chunks qui ont changé (ou à recalculer)
+  final Set<int> _nextDirty = {};
+
+  Chunk _getChunk(int cx, int cy) =>
+      _chunks.putIfAbsent(pack(cx, cy), () => Chunk());
+
+  // lecture sûre (retourne 0 si chunk manquant)
+  int getCell(int x, int y) {
+    final cx = chunkX(x), cy = chunkY(y);
+    final c = _chunks[pack(cx, cy)];
+    if (c == null) return 0;
+    return c.state[c.idx(localX(x), localY(y))];
+  }
+
+  // écriture + marque dirty
+  void setCell(int x, int y, int v) {
+    final cx = chunkX(x), cy = chunkY(y);
+    final c = _getChunk(cx, cy);
+    final i = c.idx(localX(x), localY(y));
+    if (c.state[i] != v) {
+      c.state[i] = v;
+      c.imageDirty = true;
+      _dirty.add(pack(cx, cy));
+      // le voisinage sera recalculé au tick
+    }
+  }
+
+  // Règle type Moore r=1 (ex: Game of Life, à adapter)
+  @inline
+  bool rule(int alive, int nb) {
+    // Exemple Life: survit avec 2-3 voisins, naît avec 3
+    if (alive == 1) return nb == 2 || nb == 3;
+    return nb == 3;
+  }
+
+  // calcule une passe de simulation pour chunks dirty + halo
+  void step() {
+    if (_dirty.isEmpty) return;
+
+    final Set<int> toProcess = {};
+    for (final key in _dirty) {
+      final cx = key >> 32;
+      final cy = (key & 0xffffffff);
+      for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+          toProcess.add(pack(cx + dx, cy + dy));
+        }
+      }
+    }
+
+    // Assure l’existence des chunks à traiter
+    for (final key in toProcess) {
+      final cx = key >> 32;
+      final cy = (key & 0xffffffff);
+      _getChunk(cx, cy); // crée si absent
+    }
+
+    // Calcul next pour chaque chunk
+    for (final key in toProcess) {
+      final cx = key >> 32;
+      final cy = (key & 0xffffffff);
+      final c = _chunks[key]!;
+      bool changed = false;
+
+      for (int ly = 0; ly < kChunkSize; ly++) {
+        for (int lx = 0; lx < kChunkSize; lx++) {
+          final gx = (cx << kLog2Chunk) | lx;
+          final gy = (cy << kLog2Chunk) | ly;
+
+          int nb = 0;
+          // voisinage Moore 3x3
+          for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+              if (ox == 0 && oy == 0) continue;
+              nb += getCell(gx + ox, gy + oy);
+            }
+          }
+
+          final i = c.idx(lx, ly);
+          final alive = c.state[i];
+          final nextAlive = rule(alive, nb) ? 1 : 0;
+          c.next[i] = nextAlive;
+          if (!changed && nextAlive != alive) changed = true;
+        }
+      }
+
+      if (changed) {
+        _nextDirty.add(key);
+        c.imageDirty = true;
+      }
+    }
+
+    // Commit: swap buffers + propage dirty
+    for (final key in toProcess) {
+      _chunks[key]!.swap();
+    }
+    _dirty
+      ..clear()
+      ..addAll(_nextDirty);
+    _nextDirty.clear();
+  }
+
+  // Marque tout un rectangle comme initialisé (ex: seed)
+  void seedRect(int x0, int y0, int w, int h, {int value = 1}) {
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        setCell(x0 + x, y0 + y, value);
+      }
+    }
+  }
+
+  // Accès rendu
+  Iterable<MapEntry<int, Chunk>> visibleChunks(
+      Rect worldRectInCells) sync* {
+    final int cx0 = math.floor(worldRectInCells.left) >> kLog2Chunk;
+    final int cy0 = math.floor(worldRectInCells.top)  >> kLog2Chunk;
+    final int cx1 = math.floor(worldRectInCells.right) >> kLog2Chunk;
+    final int cy1 = math.floor(worldRectInCells.bottom)>> kLog2Chunk;
+    for (int cy = cy0; cy <= cy1; cy++) {
+      for (int cx = cx0; cx <= cx1; cx++) {
+        final key = pack(cx, cy);
+        final c = _chunks[key];
+        if (c != null) yield MapEntry(key, c);
+      }
+    }
+  }
+}

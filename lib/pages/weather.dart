@@ -404,13 +404,15 @@ class _WeatherState extends State<Weather> {
             ],
           ),
 
+          Align(alignment: Alignment.bottomRight, child: FloatingMenu(theme)),
+
           // Affichage d'un widget d'attente
           _weather.isReady
               ? const SizedBox.shrink()
               : Stack(
                   key: const ValueKey('loading'),
                   children: const [
-                    // Bloque les interactions derrière + légère obscurité
+                    // BColor.fromARGB(102, 0, 0, 0)tions derrière + légère obscurité
                     ModalBarrier(
                       dismissible: false,
                       color: Color.fromARGB(100, 0, 0, 0),

@@ -760,7 +760,7 @@ class GridPainter extends CustomPainter {
       canvas.drawLine(
         Offset(x, 0),
         Offset(x, size.height),
-        (x / cell) % 5 == 0 ? majorLinePaint : minorLinePaint,
+        (x / cell) % 4 == 0 ? majorLinePaint : minorLinePaint,
       );
     }
     // Lignes horizontales
@@ -768,7 +768,7 @@ class GridPainter extends CustomPainter {
       canvas.drawLine(
         Offset(0, y),
         Offset(size.width, y),
-        (y / cell) % 5 == 0 ? majorLinePaint : minorLinePaint,
+        (y / cell) % 4 == 0 ? majorLinePaint : minorLinePaint,
       );
     }
   }
@@ -904,7 +904,7 @@ class _GridZoomState extends State<GridZoom> {
           });
         },
         child: CustomPaint(
-          size: const Size(200, 200),
+          size: gridSize,
           painter: GridPainter(cell: widget.cell),
           foregroundPainter: CellPaint(
             positions: cellPositions,
