@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:richard/assets/constants.dart';
+import 'package:richard/dbug.dart';
+import 'package:richard/modeles/life.dart';
 import 'package:richard/modeles/weatherAPI.dart';
 import 'package:richard/ui/theme.dart';
 
@@ -123,15 +127,21 @@ class FrameRounded extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final double strokeWidth = 2;
+
     // Crée un cadre rectangulaire
     Paint rectangle = Paint()
-      ..strokeWidth = 2
+      ..strokeWidth = strokeWidth
       ..color = colorFrame
       ..style = PaintingStyle.stroke;
 
     // Ajoute les contraintes pour les bords arrondis
-    const double offset = 20.0;
-    Rect rect = Rect.fromLTRB(-offset, 0, size.width + offset, size.height);
+    final rect = Rect.fromLTWH(
+      strokeWidth / 2,
+      strokeWidth / 2,
+      size.width - strokeWidth,
+      size.height - strokeWidth,
+    );
 
     // Dessine le rectangle
     canvas.drawRRect(
@@ -425,7 +435,7 @@ class SwitchLine extends StatelessWidget {
 */
 class PopupDisplayInfos extends StatefulWidget {
   final String title;
-  final Map<String, String> content;
+  final Map<String, String?> content;
   final PopupColorCode style;
 
   const PopupDisplayInfos({
@@ -442,14 +452,14 @@ class PopupDisplayInfos extends StatefulWidget {
 class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
   // Construit une section de texte pour avoir un label avec un style (ex regular)
   // et la variable associé avec un autre style (ex bold)
-  RichText _buildDataSection(String label, String variable) {
+  RichText _buildDataSection(String label, String? variable) {
     return RichText(
       text: TextSpan(
         children: [
           // Affichage du label
           TextSpan(text: label, style: widget.style.getLabelStyle),
           // Sur la même ligne affichage de la variable
-          TextSpan(text: variable, style: widget.style.getVariableStyle),
+          TextSpan(text: variable ?? "", style: widget.style.getVariableStyle),
         ],
       ),
     );
@@ -469,20 +479,26 @@ class _PopupDisplayInfosState extends State<PopupDisplayInfos> {
               // Crée un cadre et place à l'interieur les données passé en paramètre
               CustomPaint(
                 painter: FrameRounded(widget.style.getFrameColor),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 15),
-                    Text(widget.title, style: widget.style.getTitleStyle),
-                    const SizedBox(height: 16),
-                    Column(
-                      children: [
-                        for (var data in widget.content.entries)
-                          _buildDataSection(data.key, data.value),
-                        const SizedBox(height: 15),
-                      ],
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 15),
+                      Text(widget.title, style: widget.style.getTitleStyle),
+                      const SizedBox(height: 16),
+                      Column(
+                        children: [
+                          for (var data in widget.content.entries)
+                            _buildDataSection(data.key, data.value),
+                          const SizedBox(height: 15),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -540,7 +556,7 @@ class CityAutoComplete<T> extends StatelessWidget {
     final List<City<T>> cities = dataList.entries
         .map((entry) => City<T>(name: entry.value, codeInsee: entry.key))
         .toList();
-    print("[ DEBUG ] Autocomplete : $currentData");
+    printDebug("Autocomplete : $currentData");
     return Autocomplete<City<T>>(
       initialValue: TextEditingValue(
         text: dataList.entries
@@ -746,6 +762,8 @@ class GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    printDebug("Running gridPainter", debug: false);
+
     // Crée les grosses bordures
     final minorLinePaint = Paint()
       ..color = Colors.white54
@@ -793,12 +811,13 @@ class CellPaint extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    printDebug("Running cellPaint", debug: false);
+
     // Crée une cellule
     Paint cell = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    print("[ DEBUG ] Running");
     // Permet de peindre l'historique des cellules
     for (var position in positions) {
       // Calcule la position de la cellule
@@ -809,8 +828,9 @@ class CellPaint extends CustomPainter {
         cellDimensions,
       );
 
-      print(
-        "[ DEBUG ] Painting $cellDimensions len cell at : (X=${position.dx};Y=${position.dy})",
+      printDebug(
+        "Painting $cellDimensions len cell at : (X=${position.dx};Y=${position.dy})",
+        debug: false,
       );
       // Peint la cellule
       canvas.drawRect(rect, cell);
@@ -860,54 +880,142 @@ class SettingsMenu extends StatelessWidget {
 */
 class GridZoom extends StatefulWidget {
   final double cell;
-  const GridZoom({super.key, required this.cell});
+  final LifeLogique life;
+  final bool isPaused;
+  final int generation;
+  final void Function(List<Point<int>>) getCells;
+
+  const GridZoom({
+    super.key,
+    this.cell = cellSize,
+    required this.life,
+    required this.isPaused,
+    required this.generation,
+    required this.getCells,
+  });
 
   @override
   State<GridZoom> createState() => _GridZoomState();
 }
 
 class _GridZoomState extends State<GridZoom> {
-  List<Offset> cellPositions =
-      []; // Permet d'avoir un historique des cellules et donc de garder d'afficher les cellules peintes
+  late TransformationController _controller; // Pour définir la zone de spawn
+
+  List<Offset> cellPositionsUI =
+      []; // Permet d'avoir un historique des cellules à afficher et donc de garder d'afficher les cellules peintes
+  List<Point<int>> cellPositionsBack =
+      []; // Permet d'avoir un historique des cellules à envoyer à la logique et donc de garder d'afficher les cellules peintes
+
+  void _getNextGeneration() {
+    cellPositionsUI = [];
+    for (var chunk in widget.life.getChunks.values) {
+      List<Point<int>> allCells = chunk.getAllCells();
+      for (var chunkCell in allCells) {
+        cellPositionsUI.add(
+          Offset(chunkCell.x * widget.cell, chunkCell.y * widget.cell),
+        );
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isPaused) {
+      _getNextGeneration();
+    }
+
+    _controller = TransformationController();
+
+    // Centre initial + zoom 1x
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final gridWidth = gridSize.width;
+      final gridHeight = gridSize.height;
+      final viewportWidth = MediaQuery.of(context).size.width;
+      final viewportHeight = MediaQuery.of(context).size.height;
+
+      // Décalage pour centrer la grille
+      final dx = (viewportWidth - gridWidth) / 2;
+      final dy = (viewportHeight - gridHeight) / 2;
+
+      _controller.value = Matrix4.identity()
+        ..translate(dx, dy) // déplacement
+        ..scale(1.0); // zoom initial
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant GridZoom oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.generation != widget.generation ||
+        oldWidget.life != widget.life) {
+      _getNextGeneration();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // InteractiveViewer permet de se déplacer et zoomer dans un widget (ici la grille)
     return InteractiveViewer(
+      transformationController: _controller,
       constrained: false,
-      boundaryMargin: const EdgeInsets.all(200),
+      boundaryMargin: const EdgeInsets.all(170),
       minScale: 0.5,
-      maxScale: 3,
+      maxScale: 5,
       child: GestureDetector(
         // Détecte chaque clique dans la grille et détermine sa position
         onTapDown: (TapDownDetails details) {
-          print("[ DEBUG ] local position : ${details.localPosition}");
-          // Convertit la position en int (ex X=28.9 - Y=34.2 => X=20.0 Y=30.0) affine de faire les calculs en backend avec une grille plus petite
-          Offset pos = Offset(
-            (details.localPosition.dx ~/ widget.cell).toDouble() *
-                widget
-                    .cell, // Sans widget.cell si le doit est sur X=1 - Y=1 il sera interprété
-            (details.localPosition.dy ~/ widget.cell).toDouble() *
-                widget
-                    .cell, // comme 1px - 1px au lieu de la case 1-1, donc widget.cell permet de convertir
-          );
-          print("[ DEBUG ] X = ${pos.dx} - Y = ${pos.dy}");
-          setState(() {
-            print("[ DEBUG ] cellPositions : $cellPositions");
-            if (!cellPositions.contains(pos)) {
-              print("[ DEBUG ] add $pos");
-              cellPositions = List.of(cellPositions)
-                ..add(
-                  pos,
-                ); // Copie l'ancienne liste dans une nouvelle instance et assigne cette nouvelle liste à l'ancienne pour que le shouldRepaint détécte une nouvelle liste
-            }
-          });
+          if (widget.isPaused) {
+            printDebug("local position : ${details.localPosition}");
+            // Convertit la position en int (ex X=28.9 - Y=34.2 => X=20.0 Y=30.0) affine de faire les calculs en backend avec une grille plus petite
+            Offset posUI = Offset(
+              (details.localPosition.dx ~/ widget.cell).toDouble() *
+                  widget
+                      .cell, // Sans widget.cell si le doit est sur X=1 - Y=1 il sera interprété
+              (details.localPosition.dy ~/ widget.cell).toDouble() *
+                  widget
+                      .cell, // comme 1px - 1px au lieu de la case 1-1, donc widget.cell permet de convertir
+            );
+
+            Point<int> posBack = Point<int>(
+              details.localPosition.dx ~/ widget.cell,
+              details.localPosition.dy ~/ widget.cell,
+            );
+
+            printDebug("X = ${posUI.dx} - Y = ${posUI.dy}");
+            setState(() {
+              printDebug("cellPositions : back : $cellPositionsBack");
+              if (!cellPositionsUI.contains(posUI)) {
+                printDebug("add ui $posUI");
+                cellPositionsUI = List.of(cellPositionsUI)
+                  ..add(
+                    posUI,
+                  ); // Copie l'ancienne liste dans une nouvelle instance et assigne cette nouvelle liste à l'ancienne pour que le shouldRepaint détécte une nouvelle liste
+              } else {
+                // Si le point existe déjà alors le supprimer
+                cellPositionsUI = List.of(cellPositionsUI)
+                  ..removeWhere((position) => position == posUI);
+              }
+
+              // Mets à jour la liste pour le backend
+              if (!cellPositionsBack.contains(posBack)) {
+                printDebug("add back $posBack");
+                cellPositionsBack = List.of(cellPositionsBack)..add(posBack);
+              } else {
+                cellPositionsBack = List.of(cellPositionsBack)
+                  ..removeWhere((position) => position == posBack);
+              }
+
+              widget.getCells(List.of(cellPositionsBack));
+            });
+          }
         },
         child: CustomPaint(
           size: gridSize,
           painter: GridPainter(cell: widget.cell),
           foregroundPainter: CellPaint(
-            positions: cellPositions,
+            positions: cellPositionsUI,
             cellDimensions: widget.cell,
           ),
         ),

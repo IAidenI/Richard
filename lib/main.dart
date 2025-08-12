@@ -15,7 +15,7 @@ void main() async {
   // Glyder1 : [Point(4, 5), Point(5, 5), Point(6, 5), Point(6, 4), Point(5, 3)]
   // Glyder2 : [Point(5, 7), Point(6, 7), Point(7, 7), Point(7, 6), Point(6, 5)]
 
-  List<Point<int>> initialCell = [
+  /*List<Point<int>> initialCell = [
     Point(5, 7),
     Point(6, 7),
     Point(7, 7),
@@ -23,8 +23,8 @@ void main() async {
     Point(6, 5),
   ];
   LifeLogique life = LifeLogique(initialCell);
-  life.simulation();
-  //runApp(const MyApp());
+  life.simulation();*/
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

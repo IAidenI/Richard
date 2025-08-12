@@ -311,11 +311,18 @@ const Map<String, String> cityTable = {
 //  \____/_/   \_\_|  |_|_____|____/
 
 // Game ui settings
-const Size gridSize = Size(240, 240);
+const Size gridSize = Size(10000, 10000);
+const double cellSize = 10;
+
+final int _maxX = (gridSize.width ~/ cellSize);
+final int _maxY = (gridSize.height ~/ cellSize);
+
+bool inBounds(int gx, int gy) => gx >= 0 && gy >= 0 && gx < _maxX && gy < _maxY;
 
 // Game back settings
 const int littleGrid = 4;
-const int chunkSize = 8;
+const int chunkSize = 256;
+int getLog2 = log(chunkSize) ~/ log(2);
 
 const int livingCell = 8;
 const int deadCell = 0;
