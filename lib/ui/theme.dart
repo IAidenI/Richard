@@ -1,28 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:richard/assets/constants.dart';
 
-class WeatherTheme {
+abstract class AppTheme {
+  // Thèmes
+  Color get getPrimary;
+  Color get getSecondary;
+  Color get getTertiary;
+  Color get getButtonColor;
+  Color get getFrameColor;
+}
+
+// =============================================
+// =====-----------------------------------=====
+// =====--------   WEATHER THEME   --------=====
+// =====-----------------------------------=====
+// =============================================
+class WeatherTheme implements AppTheme {
   final ColorCode currentWeather;
 
-  // Backgrounds
   late final AssetImage _background;
   late final AssetImage _backgroundMenu;
-
   AssetImage get getBackground => _background;
   AssetImage get getBackgroundMenu => _backgroundMenu;
 
-  // Thèmes
   Color _primary = const Color.fromARGB(255, 109, 109, 109);
   Color _secondary = const Color.fromARGB(255, 198, 198, 198);
   Color _tertiary = const Color.fromARGB(60, 144, 138, 138);
-  Color _button = Color.fromARGB(255, 145, 145, 158);
-  Color _frame = Color.fromARGB(255, 0, 0, 0);
+  Color _buttonColor = Color.fromARGB(255, 145, 145, 158);
+  Color _frameColor = Color.fromARGB(255, 0, 0, 0);
 
+  @override
   Color get getPrimary => _primary;
+
+  @override
   Color get getSecondary => _secondary;
+
+  @override
   Color get getTertiary => _tertiary;
-  Color get getButton => _button;
-  Color get getFrame => _frame;
+
+  @override
+  Color get getButtonColor => _buttonColor;
+
+  @override
+  Color get getFrameColor => _frameColor;
 
   WeatherTheme(this.currentWeather) {
     final file = _fileName();
@@ -60,44 +80,44 @@ class WeatherTheme {
       case ColorCode.SUN:
         _primary = const Color.fromARGB(255, 68, 163, 220);
         _secondary = const Color.fromARGB(255, 199, 234, 255);
-        _button = Color.fromARGB(255, 56, 52, 223);
-        _frame = Color.fromARGB(255, 32, 84, 116);
+        _buttonColor = Color.fromARGB(255, 56, 52, 223);
+        _frameColor = Color.fromARGB(255, 32, 84, 116);
         break;
       case ColorCode.SOME_CLOUDS:
         _primary = const Color.fromARGB(255, 232, 124, 132);
         _secondary = const Color.fromARGB(255, 248, 199, 200);
-        _button = Color.fromARGB(255, 225, 93, 99);
-        _frame = Color.fromARGB(255, 177, 50, 59);
+        _buttonColor = Color.fromARGB(255, 225, 93, 99);
+        _frameColor = Color.fromARGB(255, 177, 50, 59);
         break;
       case ColorCode.CLOUDS:
         _primary = const Color.fromARGB(255, 32, 204, 178);
         _secondary = const Color.fromARGB(255, 168, 255, 242);
-        _button = Color.fromARGB(255, 62, 198, 210);
-        _frame = Color.fromARGB(255, 27, 94, 84);
+        _buttonColor = Color.fromARGB(255, 62, 198, 210);
+        _frameColor = Color.fromARGB(255, 27, 94, 84);
         break;
       case ColorCode.RAIN:
         _primary = const Color.fromARGB(255, 32, 204, 178);
         _secondary = const Color.fromARGB(255, 168, 255, 242);
-        _button = Color.fromARGB(255, 62, 198, 210);
-        _frame = Color.fromARGB(255, 27, 94, 84);
+        _buttonColor = Color.fromARGB(255, 62, 198, 210);
+        _frameColor = Color.fromARGB(255, 27, 94, 84);
         break;
       case ColorCode.SNOW:
         _primary = Color.fromARGB(255, 66, 175, 209);
         _secondary = const Color.fromARGB(255, 148, 230, 255);
-        _button = Color.fromARGB(255, 52, 118, 223);
-        _frame = Color.fromARGB(255, 0, 54, 125);
+        _buttonColor = Color.fromARGB(255, 52, 118, 223);
+        _frameColor = Color.fromARGB(255, 0, 54, 125);
         break;
       case ColorCode.THUNDERSTORM:
         _primary = const Color.fromARGB(255, 72, 44, 92);
         _secondary = const Color.fromARGB(255, 198, 171, 216);
-        _button = Color.fromARGB(255, 126, 52, 223);
-        _frame = Color.fromARGB(255, 92, 30, 138);
+        _buttonColor = Color.fromARGB(255, 126, 52, 223);
+        _frameColor = Color.fromARGB(255, 92, 30, 138);
         break;
       case ColorCode.HAIL:
         _primary = const Color.fromARGB(255, 72, 68, 76);
         _secondary = const Color.fromARGB(255, 221, 221, 221);
-        _button = Color.fromARGB(255, 145, 145, 158);
-        _frame = Color.fromARGB(255, 117, 108, 124);
+        _buttonColor = Color.fromARGB(255, 145, 145, 158);
+        _frameColor = Color.fromARGB(255, 117, 108, 124);
         break;
       case ColorCode.UNKNOW:
         break;
@@ -304,12 +324,6 @@ class WeatherTheme {
       color: Colors.white,
     );
   }
-
-  // ===========================================
-  // =====---------------------------------=====
-  // =====--------   GAMES THEME   --------=====
-  // =====---------------------------------=====
-  // ===========================================
 }
 
 // Permet de selectionner les bonnes couleurs en fonction
@@ -329,9 +343,9 @@ class PopupColorCode {
     _styleTitle = theme.popupTitle();
     _styleLabel = theme.popupLabel();
     _styleVariable = theme.popupVariable();
-    _frame = theme.getFrame;
+    _frame = theme.getFrameColor;
     _background = theme.getSecondary;
-    _colorButton = theme.getButton;
+    _colorButton = theme.getButtonColor;
     _colorButtonText = theme.textButtonStyle();
   }
 
@@ -344,14 +358,85 @@ class PopupColorCode {
   TextStyle get getButtonTextColor => _colorButtonText;
 }
 
-class GameTheme {
-  final Color primary;
-  final Color secondary;
+// ===========================================
+// =====---------------------------------=====
+// =====--------   GAMES THEME   --------=====
+// =====---------------------------------=====
+// ===========================================
 
-  const GameTheme({required this.primary, required this.secondary});
-}
+class GameLifeThemes implements AppTheme {
+  Color _gridBackground = const Color.fromARGB(255, 27, 24, 19);
+  Color _gridLine = Colors.black;
+  Color _cellsColor = Colors.white;
+  Color get getGridBackgroundColor => _gridBackground;
+  Color get getGridLineColor => _gridLine;
+  Color get getCellsColor => _cellsColor;
 
-/// Namespace qui regroupe tous les thèmes
-class GameThemes {
-  static const life = GameTheme(primary: Colors.black, secondary: Colors.white);
+  Color _primary = const Color.fromARGB(255, 109, 109, 109);
+  Color _secondary = const Color.fromARGB(255, 198, 198, 198);
+  Color _tertiary = const Color.fromARGB(60, 144, 138, 138);
+  Color _buttonColor = Color.fromARGB(255, 145, 145, 158);
+  Color _frameColor = Color.fromARGB(255, 0, 0, 0);
+
+  @override
+  Color get getPrimary => _primary;
+
+  @override
+  Color get getSecondary => _secondary;
+
+  @override
+  Color get getTertiary => _tertiary;
+
+  @override
+  Color get getButtonColor => _buttonColor;
+
+  @override
+  Color get getFrameColor => _frameColor;
+
+  GameLifeThemes() {
+    _setTheme();
+  }
+
+  void _setTheme() {
+    _gridBackground = const Color.fromARGB(255, 27, 24, 19);
+    _gridLine = Colors.black;
+    _cellsColor = Colors.white;
+
+    _primary = Colors.white;
+    _secondary = Colors.black;
+    _tertiary = const Color.fromARGB(60, 255, 255, 255);
+    _buttonColor = Color.fromARGB(255, 56, 52, 223);
+    _frameColor = Color.fromARGB(255, 32, 84, 116);
+  }
+
+  /*
+    Fonts pour les informations supplémentaires
+  */
+  TextStyle popupTitle() {
+    return TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: _secondary,
+    );
+  }
+
+  TextStyle popupLabel() {
+    return TextStyle(
+      fontSize: 15,
+      color: _secondary,
+      fontWeight: FontWeight.w400,
+    );
+  }
+
+  TextStyle popupVariable() {
+    return TextStyle(
+      fontSize: 15,
+      color: _secondary,
+      fontWeight: FontWeight.bold,
+    );
+  }
+
+  TextStyle textButtonStyle() {
+    return TextStyle(fontFamily: 'BebasNeue', fontSize: 20, color: _secondary);
+  }
 }

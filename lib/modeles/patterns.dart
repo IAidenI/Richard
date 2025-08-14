@@ -1,29 +1,60 @@
 import 'dart:math';
+import 'dart:ui';
+import 'package:richard/assets/constants.dart';
+import 'package:richard/dbug.dart';
 
 class LifePatterns {
   final String name;
   final String category;
-  final List<Point<int>> cells;
+  final Size size;
+  final int generations;
+  final Set<Point<int>> cells;
 
   LifePatterns({
     required this.name,
     required this.category,
+    required this.size,
+    required this.generations,
     required this.cells,
   });
 
   // Renvoie la position avec l'offset appliqué
-  LifePatterns translated(Point<int> offset) {
+  LifePatterns translated({Point<int>? offset}) {
+    // Si aucun offset, on centre par défaut
+    offset ??= Point<int>(
+      ((gridSize.width ~/ cellSize) ~/ 2) - (size.width ~/ 2),
+      ((gridSize.height ~/ cellSize) ~/ 2) - (size.height ~/ 2),
+    );
+
     return LifePatterns(
       name: name,
       category: category,
+      size: size,
+      generations: generations,
       cells: cells
-        ..map((p) => Point<int>(p.x + offset.x, p.y + offset.y)).toList(),
+          .map((p) => Point<int>(p.x + offset!.x, p.y + offset!.y))
+          .toSet(),
     );
   }
 
   String get getName => name;
   String get getCategory => category;
-  List<Point<int>> get getCells => cells;
+  Size get getSize => size;
+  int get getGenerations => generations;
+  Set<Point<int>> get getCells => cells;
+
+  String get getFormattedName => "Nom : $name";
+  String get getFormattedSize =>
+      "Taille : ${size.width.toInt()}x${size.height.toInt()}";
+  String get getFormattedGenerations =>
+      "Générations : ${generations == -1 ? "Inconnu" : generations}";
+
+  static final List<List<LifePatterns>> all = [
+    StillLifes.all,
+    Oscillators.all,
+    Spaceships.all,
+    Generators.all,
+  ];
 }
 
 class StillLifes {
@@ -32,26 +63,32 @@ class StillLifes {
   static final LifePatterns block = LifePatterns(
     name: "Block",
     category: category,
-    cells: [Point(0, 0), Point(1, 0), Point(0, 1), Point(1, 1)],
+    size: Size(2, 2),
+    generations: 0,
+    cells: {Point(0, 0), Point(1, 0), Point(0, 1), Point(1, 1)},
   );
 
   static final LifePatterns beeHive = LifePatterns(
     name: "Bee Hive",
     category: category,
-    cells: [
+    size: Size(4, 3),
+    generations: 0,
+    cells: {
       Point(0, 1),
       Point(1, 0),
       Point(2, 0),
       Point(3, 1),
       Point(2, 2),
       Point(1, 2),
-    ],
+    },
   );
 
   static final LifePatterns loaf = LifePatterns(
     name: "Loaf",
     category: category,
-    cells: [
+    size: Size(4, 4),
+    generations: 0,
+    cells: {
       Point(0, 1),
       Point(1, 2),
       Point(2, 3),
@@ -59,20 +96,26 @@ class StillLifes {
       Point(2, 0),
       Point(3, 1),
       Point(3, 2),
-    ],
+    },
   );
 
   static final LifePatterns boat = LifePatterns(
     name: "Boat",
     category: category,
-    cells: [Point(0, 1), Point(0, 0), Point(1, 0), Point(2, 1), Point(1, 2)],
+    size: Size(3, 3),
+    generations: 0,
+    cells: {Point(0, 1), Point(0, 0), Point(1, 0), Point(2, 1), Point(1, 2)},
   );
 
   static final LifePatterns tub = LifePatterns(
     name: "Tub",
     category: category,
-    cells: [Point(1, 0), Point(2, 1), Point(1, 2), Point(0, 1)],
+    size: Size(3, 3),
+    generations: 0,
+    cells: {Point(1, 0), Point(2, 1), Point(1, 2), Point(0, 1)},
   );
+
+  static final List<LifePatterns> all = [block, beeHive, loaf, boat, tub];
 }
 
 class Oscillators {
@@ -81,13 +124,17 @@ class Oscillators {
   static final LifePatterns blinker = LifePatterns(
     name: "Blinker",
     category: category,
-    cells: [Point(0, 1), Point(1, 1), Point(2, 1)],
+    size: Size(3, 3),
+    generations: 2,
+    cells: {Point(0, 1), Point(1, 1), Point(2, 1)},
   );
 
   static final LifePatterns figureEight = LifePatterns(
     name: "Figure Eight",
     category: category,
-    cells: [
+    size: Size(6, 6),
+    generations: 8,
+    cells: {
       Point(0, 0),
       Point(1, 0),
       Point(1, 1),
@@ -100,13 +147,15 @@ class Oscillators {
       Point(4, 4),
       Point(5, 4),
       Point(5, 5),
-    ],
+    },
   );
 
   static final LifePatterns pulsar = LifePatterns(
     name: "Pulsar",
     category: category,
-    cells: [
+    size: Size(13, 13),
+    generations: 3,
+    cells: {
       Point(2, 0),
       Point(3, 0),
       Point(4, 0),
@@ -155,13 +204,15 @@ class Oscillators {
       Point(4, 12),
       Point(3, 12),
       Point(2, 12),
-    ],
+    },
   );
 
   static final LifePatterns pentaDecathlon = LifePatterns(
     name: "Penta-Decathlon",
     category: category,
-    cells: [
+    size: Size(10, 3),
+    generations: 15,
+    cells: {
       Point(0, 1),
       Point(1, 1),
       Point(2, 0),
@@ -173,25 +224,36 @@ class Oscillators {
       Point(7, 0),
       Point(7, 2),
       Point(8, 1),
-    ],
+    },
   );
+
+  static final List<LifePatterns> all = [
+    blinker,
+    figureEight,
+    pulsar,
+    pentaDecathlon,
+  ];
 }
 
-class Spacships {
+class Spaceships {
   static const String category = "Vaisseaux";
 
   // Left down
   static final LifePatterns glider = LifePatterns(
     name: "Glider",
     category: category,
-    cells: [Point(0, 2), Point(1, 2), Point(2, 2), Point(2, 1), Point(1, 0)],
+    size: Size(3, 3),
+    generations: 4,
+    cells: {Point(0, 2), Point(1, 2), Point(2, 2), Point(2, 1), Point(1, 0)},
   );
 
   // Left
   static final LifePatterns lightWeightSpacship = LifePatterns(
     name: "Light Weight Spaceship",
     category: category,
-    cells: [
+    size: Size(5, 4),
+    generations: 4,
+    cells: {
       Point(0, 0),
       Point(0, 2),
       Point(3, 0),
@@ -201,14 +263,16 @@ class Spacships {
       Point(4, 3),
       Point(4, 2),
       Point(4, 1),
-    ],
+    },
   );
 
   // Left
   static final LifePatterns middleWeightSpaceship = LifePatterns(
     name: "Middle Weight Spaceship",
     category: category,
-    cells: [
+    size: Size(6, 5),
+    generations: 4,
+    cells: {
       Point(0, 1),
       Point(0, 3),
       Point(2, 0),
@@ -220,14 +284,16 @@ class Spacships {
       Point(5, 3),
       Point(5, 2),
       Point(4, 1),
-    ],
+    },
   );
 
   // Left
   static final LifePatterns heavyWeightSpaceship = LifePatterns(
     name: "Heavy Weight Spaceship",
     category: category,
-    cells: [
+    size: Size(7, 5),
+    generations: 4,
+    cells: {
       Point(0, 1),
       Point(0, 3),
       Point(2, 0),
@@ -241,8 +307,15 @@ class Spacships {
       Point(6, 4),
       Point(6, 3),
       Point(6, 2),
-    ],
+    },
   );
+
+  static final List<LifePatterns> all = [
+    glider,
+    lightWeightSpacship,
+    middleWeightSpaceship,
+    heavyWeightSpaceship,
+  ];
 }
 
 class Generators {
@@ -251,7 +324,9 @@ class Generators {
   static final LifePatterns gun = LifePatterns(
     name: "Gospel's glider gun",
     category: category,
-    cells: [
+    size: Size(36, 9),
+    generations: 30,
+    cells: {
       Point(0, 4),
       Point(1, 4),
       Point(1, 5),
@@ -288,8 +363,10 @@ class Generators {
       Point(34, 3),
       Point(35, 2),
       Point(35, 3),
-    ],
+    },
   );
+
+  static final List<LifePatterns> all = [gun];
 }
 
 class Methuselah {
@@ -298,7 +375,9 @@ class Methuselah {
   static final LifePatterns arcon = LifePatterns(
     name: "Arcon",
     category: category,
-    cells: [
+    size: Size(7, 3),
+    generations: -1,
+    cells: {
       Point(1, 0),
       Point(0, 2),
       Point(1, 2),
@@ -306,13 +385,15 @@ class Methuselah {
       Point(4, 2),
       Point(5, 2),
       Point(6, 2),
-    ],
+    },
   );
 
   static final LifePatterns rabbits = LifePatterns(
     name: "Rabbits",
     category: category,
-    cells: [
+    size: Size(8, 4),
+    generations: -1,
+    cells: {
       Point(0, 1),
       Point(2, 1),
       Point(1, 2),
@@ -322,8 +403,10 @@ class Methuselah {
       Point(5, 1),
       Point(5, 2),
       Point(7, 3),
-    ],
+    },
   );
+
+  static final List<LifePatterns> all = [arcon, rabbits];
 }
 
 class Soup {

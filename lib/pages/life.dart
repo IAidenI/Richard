@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
 import 'package:richard/modeles/life.dart';
-import 'package:richard/ui/customUI.dart';
+import 'package:richard/modeles/patterns.dart';
+import 'package:richard/ui/gameUI.dart';
+import 'package:richard/ui/generalUI.dart';
 import 'package:richard/ui/theme.dart';
 
 class Life extends StatefulWidget {
@@ -15,12 +17,13 @@ class Life extends StatefulWidget {
 }
 
 class _LifeState extends State<Life> {
-  WeatherTheme theme = WeatherTheme(ColorCode.UNKNOW);
+  GameLifeThemes theme = GameLifeThemes();
 
-  //final List<Point<int>> _initialCell = [Point(6, 7), Point(7, 7), Point(8, 7)];
-  List<Point<int>> _initialCell = [];
+  //Set<Point<int>> _initialCell = Generators.gun.translated().getCells;
+  Set<Point<int>> _initialCell = <Point<int>>{};
   final LifeLogique _life = LifeLogique();
   bool _notInit = true;
+  bool _center = false;
 
   int _resetId = 0;
 
@@ -52,7 +55,7 @@ class _LifeState extends State<Life> {
       if (_notInit) return;
 
       printDebug("Start $_generation° generation.");
-      _initialCell = _life.startNextGeneration();
+      _initialCell = _life.startNextGeneration(generation: _generation);
 
       setState(() {
         _generation++;
@@ -63,7 +66,7 @@ class _LifeState extends State<Life> {
       if (_generation >= _maxGenerations) {
         _tick?.cancel();
         // Si le maximum de générations est atteint alors afficher un message
-        showDialog(
+        /*showDialog(
           context: context,
           barrierDismissible: true,
           builder: (context) => PopupDisplayInfos(
@@ -74,7 +77,7 @@ class _LifeState extends State<Life> {
             },
             style: PopupColorCode(theme),
           ),
-        );
+        );*/
 
         _resetGeneration();
       }
@@ -113,7 +116,7 @@ class _LifeState extends State<Life> {
 
   void _resetGeneration() {
     _generation = 0;
-    _initialCell = [];
+    _initialCell.clear();
 
     // Vide les buffers
     _life.clear();
@@ -149,109 +152,176 @@ class _LifeState extends State<Life> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          GridZoom(
-            key: ValueKey(_resetId),
-            life: _life,
-            isPaused: _isPaused,
-            generation: _generation,
-            getCells: (cells) {
-              _initialCell = List.of(cells);
-            },
-          ),
+      backgroundColor: theme.getGridBackgroundColor,
+      // Le LayoutBuilder permet de récupèrer les dimenssions du téléphone
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final screenSize = Size(constraints.maxWidth, constraints.maxHeight);
+          if (screenSize.width == 0 || screenSize.height == 0) {
+            // tant que c'est 0, on n'utilise pas la taille
+            return const SizedBox.shrink();
+          }
 
-          // Menu général
-          Align(
-            alignment: Alignment.bottomRight,
-            child: SizedBox(height: 115, child: FloatingMenu(theme)),
-          ),
-
-          // Menu du jeu
-          Align(
-            alignment: Alignment.bottomCenter,
-            // Crée une boîte pour contenir les settings
-            child: TextButton(
-              onPressed: () {},
-
-              child: Container(
-                width: 200,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.rectangle,
-                  borderRadius: BorderRadius.circular(20),
+          return Stack(
+            children: [
+              GridZoom(
+                key: ValueKey(_resetId),
+                life: _life,
+                isPaused: _isPaused,
+                generation: _generation,
+                screenSize: Size(
+                  MediaQuery.of(context).size.width,
+                  MediaQuery.of(context).size.height,
                 ),
-                // Place les élément de paramètres
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Bouton pour ouvrir les settings
-                    _buildSettingsButton(
-                      icon: Icons.settings,
-                      onPressed: () {},
-                    ),
+                centerRequest: _center,
+                initialCells: _initialCell,
+                theme: theme,
+                getCells: (cells) {
+                  _initialCell = Set.of(cells);
+                },
+              ),
 
-                    // Bouton pour lance/stoper la génération
-                    _buildSettingsButton(
-                      icon: _pauseIcon,
-                      onPressed: () {
-                        _tickPause();
+              // Menu inférieur
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 217, 217, 217),
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: _buildSettingsButton(
+                    icon: Icons.handyman,
+                    onPressed: () async {
+                      if (!_isPaused) {
+                        InfoDisplayer.buildInfoDisplayer(
+                          context,
+                          "Impossible, générations en cours...",
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 20,
+                          ),
+                          duration: const Duration(seconds: 10),
+                        );
+                        return;
+                      }
 
-                        for (var cell in _initialCell) {
-                          printDebug("$cell");
-                        }
-                      },
-                    ),
+                      final indexPattern = await showDialog<Point<int>?>(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (context) => PopupWorkShop(theme: theme),
+                      );
 
-                    // Bouton pour avance rapide de la génération
-                    _buildSettingsButton(
-                      icon: Icons.skip_next,
-                      color: _fastGeneration,
-                      onPressed: () {
-                        Duration newSpeed = Duration(milliseconds: 300);
-                        if (_generationSpeed != newSpeed) {
-                          _realyFastGeneration = Colors.black;
-                          _fastGeneration = Colors.deepPurple;
-                          _changeInterval(newSpeed);
-                        } else {
-                          _fastGeneration = Colors.black;
-                          _changeInterval(_initialSpeed);
-                        }
-                      },
-                    ),
-
-                    // Bouton pour avance très rapide de la génération
-                    _buildSettingsButton(
-                      icon: Icons.fast_forward,
-                      color: _realyFastGeneration,
-                      onPressed: () {
-                        Duration newSpeed = Duration(milliseconds: 50);
-                        if (_generationSpeed != newSpeed) {
-                          _realyFastGeneration = Colors.deepPurple;
-                          _fastGeneration = Colors.black;
-                          _changeInterval(newSpeed);
-                        } else {
-                          _realyFastGeneration = Colors.black;
-                          _changeInterval(_initialSpeed);
-                        }
-                      },
-                    ),
-
-                    // Bouton pour avance très rapide de la génération
-                    _buildSettingsButton(
-                      icon: Icons.refresh,
-                      onPressed: () {
-                        setState(() => _resetGeneration());
-                      },
-                    ),
-                  ],
+                      if (indexPattern != null) {
+                        setState(() {
+                          _initialCell = LifePatterns
+                              .all[indexPattern.x][indexPattern.y]
+                              .translated()
+                              .getCells;
+                        });
+                      }
+                    },
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+
+              // Menu supéreur
+              Align(
+                alignment: Alignment.bottomRight,
+                child: SizedBox(height: 115, child: FloatingMenu(theme)),
+              ),
+
+              // Menu du jeu
+              Align(
+                alignment: Alignment.bottomCenter,
+                // Crée une boîte pour contenir les settings
+                child: TextButton(
+                  onPressed: () {},
+
+                  child: Container(
+                    width: 200,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    // Place les élément de paramètres
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Bouton pour ouvrir les settings
+                        _buildSettingsButton(
+                          icon: Icons.gps_fixed,
+                          onPressed: () {
+                            setState(() => _center = true);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _center = false;
+                            });
+                          },
+                        ),
+
+                        // Bouton pour lance/stoper la génération
+                        _buildSettingsButton(
+                          icon: _pauseIcon,
+                          onPressed: () {
+                            _tickPause();
+
+                            for (var cell in _initialCell) {
+                              printDebug("$cell");
+                            }
+                          },
+                        ),
+
+                        // Bouton pour avance rapide de la génération
+                        _buildSettingsButton(
+                          icon: Icons.skip_next,
+                          color: _fastGeneration,
+                          onPressed: () {
+                            Duration newSpeed = Duration(milliseconds: 300);
+                            if (_generationSpeed != newSpeed) {
+                              _realyFastGeneration = Colors.black;
+                              _fastGeneration = Colors.deepPurple;
+                              _changeInterval(newSpeed);
+                            } else {
+                              _fastGeneration = Colors.black;
+                              _changeInterval(_initialSpeed);
+                            }
+                          },
+                        ),
+
+                        // Bouton pour avance très rapide de la génération
+                        _buildSettingsButton(
+                          icon: Icons.fast_forward,
+                          color: _realyFastGeneration,
+                          onPressed: () {
+                            Duration newSpeed = Duration(milliseconds: 50);
+                            if (_generationSpeed != newSpeed) {
+                              _realyFastGeneration = Colors.deepPurple;
+                              _fastGeneration = Colors.black;
+                              _changeInterval(newSpeed);
+                            } else {
+                              _realyFastGeneration = Colors.black;
+                              _changeInterval(_initialSpeed);
+                            }
+                          },
+                        ),
+
+                        // Bouton pour avance très rapide de la génération
+                        _buildSettingsButton(
+                          icon: Icons.refresh,
+                          onPressed: () {
+                            setState(() => _resetGeneration());
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

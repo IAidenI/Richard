@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:richard/ui/generalUI.dart';
 import 'package:richard/ui/theme.dart';
-import '../modeles/weatherAPI.dart';
-import '../assets/constants.dart';
-import '../ui/customUI.dart';
+import 'package:richard/modeles/weatherAPI.dart';
+import 'package:richard/assets/constants.dart';
+import 'package:richard/ui/weatherUI.dart';
 
 class Weather extends StatefulWidget {
   const Weather({super.key});
@@ -57,27 +58,6 @@ class _WeatherState extends State<Weather> {
       _reposition++; // Rebuild l'autocomplete
     });
     _weather.printData();
-  }
-
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> _buildInfoDisplayer(
-    String data, {
-    SnackBarAction? action,
-    EdgeInsets? margin,
-    Duration? duration,
-  }) {
-    return ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        action: action,
-        content: Center(child: Text(data)),
-        duration: duration ?? const Duration(seconds: 1),
-        margin:
-            margin ?? const EdgeInsets.symmetric(horizontal: 80, vertical: 20),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
   }
 
   @override
@@ -167,19 +147,24 @@ class _WeatherState extends State<Weather> {
                                       _loadWeather();
 
                                       // Affiche un message pour indiqué la le repositionnement
-                                      _buildInfoDisplayer("Position GPS");
+                                      InfoDisplayer.buildInfoDisplayer(
+                                        context,
+                                        "Position GPS",
+                                      );
                                       // Sinon affiche un message
                                     } else {
                                       switch (ret) {
                                         case CodeErrorAPI
                                             .GEOLOC_SERVICE_DISABLE:
-                                          _buildInfoDisplayer(
+                                          InfoDisplayer.buildInfoDisplayer(
+                                            context,
                                             "Service désactiver",
                                           );
                                           break;
                                         case CodeErrorAPI
                                             .GEOLOC_PERMISSION_DENIED:
-                                          _buildInfoDisplayer(
+                                          InfoDisplayer.buildInfoDisplayer(
+                                            context,
                                             "Permissons refusé",
                                             action: SnackBarAction(
                                               label: 'Settings',
@@ -197,7 +182,8 @@ class _WeatherState extends State<Weather> {
                                           );
                                           break;
                                         case CodeErrorAPI.GEOLOC_FOREVER_DENIED:
-                                          _buildInfoDisplayer(
+                                          InfoDisplayer.buildInfoDisplayer(
+                                            context,
                                             "Permission refusé pour toujours",
                                             action: SnackBarAction(
                                               label: 'Settings',
@@ -215,12 +201,16 @@ class _WeatherState extends State<Weather> {
                                           );
                                           break;
                                         case CodeErrorAPI.GEOLOC_OK:
-                                          _buildInfoDisplayer(
+                                          InfoDisplayer.buildInfoDisplayer(
+                                            context,
                                             "Déjà sur la position GPS",
                                           );
                                           break;
                                         case CodeErrorAPI.DEFAULT:
-                                          _buildInfoDisplayer("ERROR");
+                                          InfoDisplayer.buildInfoDisplayer(
+                                            context,
+                                            "ERROR",
+                                          );
                                           break;
                                       }
                                     }

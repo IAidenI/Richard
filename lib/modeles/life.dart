@@ -4,22 +4,24 @@ import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
 
 class LifeLogique {
-  List<Point<int>> _initialCell = [];
-  List<Point<int>> get getInitialCell => _initialCell;
-  final bool debug;
+  Set<Point<int>> _initialCell = <Point<int>>{};
+  Set<Point<int>> get getInitialCell => _initialCell;
+  int _generation = -1;
 
   Map<int, Chunk> _chunks = {};
   Map<int, Chunk> get getChunks => _chunks;
   void clear() => _chunks = {};
 
-  LifeLogique({this.debug = false});
+  LifeLogique();
 
-  bool reStart(List<Point<int>> initialCell) {
+  bool reStart(Set<Point<int>> initialCell) {
     _initialCell = initialCell;
     return _initChunks();
   }
 
-  List<Point<int>> startNextGeneration() {
+  Set<Point<int>> startNextGeneration({int generation = -1}) {
+    if (generation != -1) _generation = generation;
+
     final candidates = <Point<int>>{};
     for (var chunk in _chunks.entries) {
       // Récupère les coordonées du relatif aux chunk du chunk à partir de sa clé
@@ -74,9 +76,9 @@ class LifeLogique {
     }
 
     // Stock les nouvelles cellules pour les possibles pauses
-    List<Point<int>> newGeneration = [];
+    Set<Point<int>> newGeneration = <Point<int>>{};
     for (var chunk in _chunks.values) {
-      List<Point<int>> allCells = chunk.getAllCells();
+      Set<Point<int>> allCells = chunk.getAllCells();
       for (var chunkCell in allCells) {
         newGeneration.add(chunkCell);
       }
@@ -88,6 +90,7 @@ class LifeLogique {
     printDebug("");
     printDebug("");
     printDebug("");
+    displayGameStats();
     return newGeneration;
   }
 
@@ -247,6 +250,40 @@ class LifeLogique {
     printDebug("[ DEBUG ] ============================================");
     printDebug("");
   }
+
+  void displayGameStats({bool debug = false}) {
+    final chunks = _chunks.values;
+    printDebug(
+      "===================== STATISTIQUES =====================",
+      debug: debug,
+    );
+    printDebug(
+      " -- Nombres de chunks           : ${chunks.length}",
+      debug: debug,
+    );
+    // Récupère le poids d'un chunk
+    for (var chunk in _chunks.entries) {
+      printDebug(
+        "        - ${chunk.key.toString().padRight(8)} : ${chunk.value.state.length} octets (${chunk.value.state.length / 1024} kB)",
+        debug: debug,
+      );
+    }
+
+    // Récupère le nombre de cellules en vie
+    int cellCounter = 0;
+    for (var livingCell in chunks) {
+      cellCounter += livingCell.getAllCells().length;
+    }
+    printDebug(" -- Nombres de cellules en vies : $cellCounter", debug: debug);
+    printDebug(
+      " -- Génération actuelle         : ${_generation == -1 ? "Non instancié" : _generation}",
+      debug: debug,
+    );
+    printDebug(
+      "========================================================",
+      debug: debug,
+    );
+  }
 }
 
 class Chunk {
@@ -264,8 +301,8 @@ class Chunk {
       Point<int>(index % chunkSize, index ~/ chunkSize);
 
   // Permet de récupèrer la position dans la grille de toutes les cellules du chunk
-  List<Point<int>> getAllCells() {
-    List<Point<int>> cells = [];
+  Set<Point<int>> getAllCells() {
+    Set<Point<int>> cells = <Point<int>>{};
     for (int i = 0; i < state.length; i++) {
       if (state[i] == livingCell) {
         // Convertit la cellul en coordonnées réels

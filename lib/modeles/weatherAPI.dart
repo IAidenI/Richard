@@ -138,7 +138,6 @@ class Weatherapi {
 
   // Première instance récupèration de la position gps
   Future<void> initAPI() async {
-    print("[ DEBUG ] AAAAAAAAA calculate gps");
     _gpsPosition = await _determinatePosition();
   }
 

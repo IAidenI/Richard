@@ -33,6 +33,7 @@ flutter:
     - assets/background/
     - assets/icons/
     - assets/menu/
+    - assets/games/GameOfLife/patterns/glider.png
   
   fonts:
     - family: Rubik
