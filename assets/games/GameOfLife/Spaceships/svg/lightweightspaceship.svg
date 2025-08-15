@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="240" viewBox="0 0 280 240" shape-rendering="crispEdges">
+  <!-- Fond de la grille -->
+  <rect x="0" y="0" width="280" height="240" fill="#FFFFFF"/>
+
+  <!-- Lignes de la grille -->
+  <g stroke="#C7C4D8" stroke-width="2" fill="none">
+    <!-- Verticales -->
+    <path d="
+      M0 0 V240
+      M40 0 V240
+      M80 0 V240
+      M120 0 V240
+      M160 0 V240
+      M200 0 V240
+      M240 0 V240
+      M280 0 V240"/>
+    <!-- Horizontales -->
+    <path d="
+      M0 0 H280
+      M0 40 H280
+      M0 80 H280
+      M0 120 H280
+      M0 160 H280
+      M0 200 H280
+      M0 240 H280"/>
+  </g>
+</svg>

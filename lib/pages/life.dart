@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
 import 'package:richard/modeles/life.dart';
 import 'package:richard/modeles/patterns.dart';
@@ -33,8 +32,8 @@ class _LifeState extends State<Life> {
   final Duration _initialSpeed = Duration(seconds: 1);
   late Duration _generationSpeed;
   final int _maxGenerations = 100000;
-  Color _fastGeneration = Colors.black;
-  Color _realyFastGeneration = Colors.black;
+  late Color _fastGeneration;
+  late Color _realyFastGeneration;
 
   // Gestion de la pause
   bool _isPaused = true;
@@ -44,6 +43,8 @@ class _LifeState extends State<Life> {
   void initState() {
     super.initState();
     _generationSpeed = _initialSpeed;
+    _fastGeneration = theme.getIconSettings;
+    _realyFastGeneration = theme.getIconSettings;
     _tickStart();
   }
 
@@ -66,18 +67,17 @@ class _LifeState extends State<Life> {
       if (_generation >= _maxGenerations) {
         _tick?.cancel();
         // Si le maximum de générations est atteint alors afficher un message
-        /*showDialog(
+        showDialog(
           context: context,
           barrierDismissible: true,
-          builder: (context) => PopupDisplayInfos(
+          builder: (context) => PopupGeneric(
             title: 'ATTENTION',
-            content: {
-              "Vous avez atteint le maximum ($_maxGenerations) de génération":
-                  null,
-            },
-            style: PopupColorCode(theme),
+            content: [
+              "Vous avez atteint le maximum ($_maxGenerations) de génération",
+            ],
+            theme: theme,
           ),
-        );*/
+        );
 
         _resetGeneration();
       }
@@ -126,8 +126,8 @@ class _LifeState extends State<Life> {
     _tickReset();
 
     _generationSpeed = _initialSpeed;
-    _fastGeneration = Colors.black;
-    _realyFastGeneration = Colors.black;
+    _fastGeneration = theme.getIconSettings;
+    _realyFastGeneration = theme.getIconSettings;
 
     _resetId++; // Pour recrée un nouveau GridZoom
   }
@@ -135,7 +135,8 @@ class _LifeState extends State<Life> {
   Widget _buildSettingsButton({
     required IconData icon,
     required Function() onPressed,
-    Color color = Colors.black,
+    Color? color,
+
     double size = 25,
   }) {
     return TextButton(
@@ -145,7 +146,7 @@ class _LifeState extends State<Life> {
         minimumSize: Size(40, 40), // pas de taille mini
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      child: Icon(icon, size: size, color: color),
+      child: Icon(icon, size: size, color: color ?? theme.getIconSettings),
     );
   }
 
@@ -181,68 +182,148 @@ class _LifeState extends State<Life> {
                 },
               ),
 
-              // Menu inférieur
+              // Menu supéreur
               Align(
                 alignment: Alignment.topCenter,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 217, 217, 217),
-                    shape: BoxShape.rectangle,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: _buildSettingsButton(
-                    icon: Icons.handyman,
-                    onPressed: () async {
-                      if (!_isPaused) {
-                        InfoDisplayer.buildInfoDisplayer(
-                          context,
-                          "Impossible, générations en cours...",
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 50,
-                            vertical: 20,
+                child: Stack(
+                  children: [
+                    InformationsFrame(
+                      child: IntrinsicWidth(
+                        child: IntrinsicHeight(
+                          child: Padding(
+                            padding: const EdgeInsets.all(30),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min, // <-- important
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Column(
+                                    mainAxisSize:
+                                        MainAxisSize.min, // <-- important
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 35,
+                                        height: 35,
+                                        decoration: BoxDecoration(
+                                          color: theme.getPrimary,
+                                          borderRadius: BorderRadius.circular(
+                                            5,
+                                          ),
+                                        ),
+                                        child: _buildSettingsButton(
+                                          icon: Icons.handyman,
+                                          size: 25,
+                                          onPressed: () async {
+                                            if (!_isPaused) {
+                                              InfoDisplayer.buildInfoDisplayer(
+                                                context,
+                                                "Impossible, générations en cours...",
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 50,
+                                                      vertical: 20,
+                                                    ),
+                                                duration: const Duration(
+                                                  seconds: 10,
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            final indexPattern =
+                                                await showDialog<Point<int>?>(
+                                                  context: context,
+                                                  barrierDismissible: true,
+                                                  builder: (context) =>
+                                                      PopupWorkShop(
+                                                        theme: theme,
+                                                      ),
+                                                );
+
+                                            if (indexPattern != null) {
+                                              setState(() {
+                                                _initialCell = LifePatterns
+                                                    .all[indexPattern
+                                                        .x][indexPattern.y]
+                                                    .translated()
+                                                    .getCells;
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      Container(
+                                        width: 25,
+                                        height: 25,
+                                        decoration: BoxDecoration(
+                                          color: theme.getPrimary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: _buildSettingsButton(
+                                          icon: Icons.help,
+                                          size: 15,
+                                          onPressed: () {},
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(width: 30),
+
+                                  Column(
+                                    mainAxisSize:
+                                        MainAxisSize.min, // <-- important
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Générations : $_generation",
+                                        style: theme.popupContentLabel(),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "Nombre de cellules en vie : ${_life.getCounterCellsAlive}",
+                                        style: theme.popupContentLabel(),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "Chunks : ${_life.getChunks.length}",
+                                        style: theme.popupContentLabel(),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          duration: const Duration(seconds: 10),
-                        );
-                        return;
-                      }
-
-                      final indexPattern = await showDialog<Point<int>?>(
-                        context: context,
-                        barrierDismissible: true,
-                        builder: (context) => PopupWorkShop(theme: theme),
-                      );
-
-                      if (indexPattern != null) {
-                        setState(() {
-                          _initialCell = LifePatterns
-                              .all[indexPattern.x][indexPattern.y]
-                              .translated()
-                              .getCells;
-                        });
-                      }
-                    },
-                  ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Menu supéreur
+              // Menu général
               Align(
                 alignment: Alignment.bottomRight,
                 child: SizedBox(height: 115, child: FloatingMenu(theme)),
               ),
 
-              // Menu du jeu
+              // Menu inférieur
               Align(
                 alignment: Alignment.bottomCenter,
                 // Crée une boîte pour contenir les settings
                 child: TextButton(
                   onPressed: () {},
-
                   child: Container(
                     width: 200,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.getPrimary,
                       shape: BoxShape.rectangle,
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -278,15 +359,17 @@ class _LifeState extends State<Life> {
                           icon: Icons.skip_next,
                           color: _fastGeneration,
                           onPressed: () {
-                            Duration newSpeed = Duration(milliseconds: 300);
-                            if (_generationSpeed != newSpeed) {
-                              _realyFastGeneration = Colors.black;
-                              _fastGeneration = Colors.deepPurple;
-                              _changeInterval(newSpeed);
-                            } else {
-                              _fastGeneration = Colors.black;
-                              _changeInterval(_initialSpeed);
-                            }
+                            setState(() {
+                              Duration newSpeed = Duration(milliseconds: 300);
+                              if (_generationSpeed != newSpeed) {
+                                _realyFastGeneration = theme.getIconSettings;
+                                _fastGeneration = theme.getselectedIconSettings;
+                                _changeInterval(newSpeed);
+                              } else {
+                                _fastGeneration = theme.getIconSettings;
+                                _changeInterval(_initialSpeed);
+                              }
+                            });
                           },
                         ),
 
@@ -295,15 +378,18 @@ class _LifeState extends State<Life> {
                           icon: Icons.fast_forward,
                           color: _realyFastGeneration,
                           onPressed: () {
-                            Duration newSpeed = Duration(milliseconds: 50);
-                            if (_generationSpeed != newSpeed) {
-                              _realyFastGeneration = Colors.deepPurple;
-                              _fastGeneration = Colors.black;
-                              _changeInterval(newSpeed);
-                            } else {
-                              _realyFastGeneration = Colors.black;
-                              _changeInterval(_initialSpeed);
-                            }
+                            setState(() {
+                              Duration newSpeed = Duration(milliseconds: 50);
+                              if (_generationSpeed != newSpeed) {
+                                _realyFastGeneration =
+                                    theme.getselectedIconSettings;
+                                _fastGeneration = theme.getIconSettings;
+                                _changeInterval(newSpeed);
+                              } else {
+                                _realyFastGeneration = theme.getIconSettings;
+                                _changeInterval(_initialSpeed);
+                              }
+                            });
                           },
                         ),
 

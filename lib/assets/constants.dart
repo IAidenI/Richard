@@ -311,7 +311,7 @@ const Map<String, String> cityTable = {
 //  \____/_/   \_\_|  |_|_____|____/
 
 // Game ui settings
-const Size gridSize = Size(10000, 10000);
+const Size gridSize = Size(100000, 100000);
 const double cellSize = 10;
 
 const double minorLineStrokeWidth = 0.6;
@@ -324,7 +324,7 @@ bool inBounds(int gx, int gy) => gx >= 0 && gy >= 0 && gx < _maxX && gy < _maxY;
 
 // Game back settings
 const int littleGrid = 10;
-const int chunkSize = 64;
+const int chunkSize = 128;
 int getLog2 = log(chunkSize) ~/ log(2);
 
 const int livingCell = 8;

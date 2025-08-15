@@ -8,6 +8,11 @@ abstract class AppTheme {
   Color get getTertiary;
   Color get getButtonColor;
   Color get getFrameColor;
+
+  // Styles
+  TextStyle get getPopupGenericTitle;
+  TextStyle get getPopupGenericLabel;
+  TextStyle get getPupGenericTextButton;
 }
 
 // =============================================
@@ -29,6 +34,22 @@ class WeatherTheme implements AppTheme {
   Color _buttonColor = Color.fromARGB(255, 145, 145, 158);
   Color _frameColor = Color.fromARGB(255, 0, 0, 0);
 
+  final TextStyle _popupGenericTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  );
+  final TextStyle _popupGenericLabel = TextStyle(
+    fontSize: 15,
+    color: Colors.black,
+    fontWeight: FontWeight.w400,
+  );
+  final TextStyle _pupGenericTextButton = TextStyle(
+    fontFamily: 'BebasNeue',
+    fontSize: 20,
+    color: Colors.white,
+  );
+
   @override
   Color get getPrimary => _primary;
 
@@ -43,6 +64,15 @@ class WeatherTheme implements AppTheme {
 
   @override
   Color get getFrameColor => _frameColor;
+
+  @override
+  TextStyle get getPopupGenericTitle => _popupGenericTitle;
+
+  @override
+  TextStyle get getPopupGenericLabel => _popupGenericLabel;
+
+  @override
+  TextStyle get getPupGenericTextButton => _pupGenericTextButton;
 
   WeatherTheme(this.currentWeather) {
     final file = _fileName();
@@ -365,18 +395,38 @@ class PopupColorCode {
 // ===========================================
 
 class GameLifeThemes implements AppTheme {
-  Color _gridBackground = const Color.fromARGB(255, 27, 24, 19);
-  Color _gridLine = Colors.black;
-  Color _cellsColor = Colors.white;
+  final Color _gridBackground = const Color.fromARGB(255, 27, 24, 19);
+  final Color _gridLine = Colors.black;
+  final Color _cellsColor = Colors.white;
   Color get getGridBackgroundColor => _gridBackground;
   Color get getGridLineColor => _gridLine;
   Color get getCellsColor => _cellsColor;
 
-  Color _primary = const Color.fromARGB(255, 109, 109, 109);
-  Color _secondary = const Color.fromARGB(255, 198, 198, 198);
-  Color _tertiary = const Color.fromARGB(60, 144, 138, 138);
-  Color _buttonColor = Color.fromARGB(255, 145, 145, 158);
-  Color _frameColor = Color.fromARGB(255, 0, 0, 0);
+  final Color _buttonColorOK = const Color.fromARGB(255, 160, 100, 50);
+  final Color _buttonColorExit = const Color.fromARGB(255, 106, 94, 81);
+  Color get getButtonColorOK => _buttonColorOK;
+  Color get getButtonColorExit => _buttonColorExit;
+
+  final Color _selectedMenu = const Color.fromARGB(255, 178, 120, 48);
+  final Color _unselectedMenu = const Color.fromARGB(255, 120, 100, 70);
+  Color get getSelectedMenu => _selectedMenu;
+  Color get getUnselectedMenu => _unselectedMenu;
+
+  final Color _selectedCard = const Color.fromARGB(255, 198, 160, 112);
+  final Color _unselectedCard = const Color.fromARGB(255, 164, 148, 128);
+  Color get getSelectedCard => _selectedCard;
+  Color get getUnselectedCard => _unselectedCard;
+
+  final Color _iconSettings = const Color.fromARGB(255, 192, 192, 192);
+  final Color _selectedIconSettings = Colors.deepPurple;
+  Color get getIconSettings => _iconSettings;
+  Color get getselectedIconSettings => _selectedIconSettings;
+
+  final Color _primary = const Color.fromARGB(255, 56, 52, 52);
+  final Color _secondary = Colors.black;
+  final Color _tertiary = const Color.fromARGB(60, 255, 255, 255);
+  final Color _buttonColor = const Color.fromARGB(255, 160, 100, 50);
+  final Color _frameColor = const Color.fromARGB(255, 225, 225, 200);
 
   @override
   Color get getPrimary => _primary;
@@ -393,50 +443,59 @@ class GameLifeThemes implements AppTheme {
   @override
   Color get getFrameColor => _frameColor;
 
+  @override
+  TextStyle get getPopupGenericTitle => popupTitle();
+
+  @override
+  TextStyle get getPopupGenericLabel => popupMenuLabel();
+
+  @override
+  TextStyle get getPupGenericTextButton => textButtonStyle();
+
   GameLifeThemes() {
     _setTheme();
   }
 
   void _setTheme() {
-    _gridBackground = const Color.fromARGB(255, 27, 24, 19);
-    _gridLine = Colors.black;
-    _cellsColor = Colors.white;
-
-    _primary = Colors.white;
-    _secondary = Colors.black;
-    _tertiary = const Color.fromARGB(60, 255, 255, 255);
-    _buttonColor = Color.fromARGB(255, 56, 52, 223);
-    _frameColor = Color.fromARGB(255, 32, 84, 116);
+    // Au besoin mettre ici le code pour d'autres thèmes
   }
 
   /*
     Fonts pour les informations supplémentaires
   */
+  Color get getPopupTitleColor => const Color.fromARGB(255, 192, 192, 192);
   TextStyle popupTitle() {
     return TextStyle(
-      fontSize: 20,
+      fontFamily: 'Orbitron',
+      fontSize: 25,
       fontWeight: FontWeight.bold,
-      color: _secondary,
+      color: getPopupTitleColor,
     );
   }
 
-  TextStyle popupLabel() {
+  TextStyle popupContentLabel() {
     return TextStyle(
-      fontSize: 15,
-      color: _secondary,
+      fontFamily: 'OpenSans',
+      fontSize: 12,
+      color: const Color.fromARGB(255, 237, 237, 237),
       fontWeight: FontWeight.w400,
     );
   }
 
-  TextStyle popupVariable() {
+  TextStyle popupMenuLabel() {
     return TextStyle(
+      fontFamily: 'Montserrat',
       fontSize: 15,
-      color: _secondary,
+      color: const Color.fromARGB(255, 237, 237, 237),
       fontWeight: FontWeight.bold,
     );
   }
 
   TextStyle textButtonStyle() {
-    return TextStyle(fontFamily: 'BebasNeue', fontSize: 20, color: _secondary);
+    return TextStyle(
+      fontFamily: 'BebasNeue',
+      fontSize: 20,
+      color: Colors.white,
+    );
   }
 }

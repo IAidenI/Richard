@@ -17,6 +17,9 @@ dependencies:
   geolocator: ^14.0.2
   loading_indicator: ^3.1.1
   collection: ^1.19.1
+  flutter_svg: ^2.2.0
+  animated_svg: ^2.1.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -33,7 +36,11 @@ flutter:
     - assets/background/
     - assets/icons/
     - assets/menu/
-    - assets/games/GameOfLife/patterns/glider.png
+    - assets/games/GameOfLife/Generators/gif/
+    - assets/games/GameOfLife/Methuselah/gif/
+    - assets/games/GameOfLife/Oscillators/gif/
+    - assets/games/GameOfLife/Spaceships/gif/
+    - assets/games/GameOfLife/StillLifes/gif/
   
   fonts:
     - family: Rubik
@@ -51,6 +58,14 @@ flutter:
     - family: BebasNeue
       fonts:
         - asset: fonts/BebasNeue-Regular.ttf
+    
+    - family: Montserrat
+      fonts:
+        - asset: fonts/Montserrat-VariableFont_wght.ttf
+    
+    - family: Orbitron
+      fonts:
+        - asset: fonts/Orbitron-VariableFont_wght.ttf
 
   uses-material-design: true
 

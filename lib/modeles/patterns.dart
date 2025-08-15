@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:richard/assets/constants.dart';
-import 'package:richard/dbug.dart';
 
 class LifePatterns {
   final String name;
@@ -9,6 +8,7 @@ class LifePatterns {
   final Size size;
   final int generations;
   final Set<Point<int>> cells;
+  final String sourceClass;
 
   LifePatterns({
     required this.name,
@@ -16,6 +16,7 @@ class LifePatterns {
     required this.size,
     required this.generations,
     required this.cells,
+    required this.sourceClass,
   });
 
   // Renvoie la position avec l'offset appliqué
@@ -34,6 +35,7 @@ class LifePatterns {
       cells: cells
           .map((p) => Point<int>(p.x + offset!.x, p.y + offset!.y))
           .toSet(),
+      sourceClass: sourceClass,
     );
   }
 
@@ -42,6 +44,7 @@ class LifePatterns {
   Size get getSize => size;
   int get getGenerations => generations;
   Set<Point<int>> get getCells => cells;
+  String get getSourceClass => sourceClass;
 
   String get getFormattedName => "Nom : $name";
   String get getFormattedSize =>
@@ -54,11 +57,13 @@ class LifePatterns {
     Oscillators.all,
     Spaceships.all,
     Generators.all,
+    Methuselah.all,
   ];
 }
 
 class StillLifes {
   static const String category = "Structures stables";
+  static final String sourceClass = (StillLifes).toString();
 
   static final LifePatterns block = LifePatterns(
     name: "Block",
@@ -66,6 +71,7 @@ class StillLifes {
     size: Size(2, 2),
     generations: 0,
     cells: {Point(0, 0), Point(1, 0), Point(0, 1), Point(1, 1)},
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns beeHive = LifePatterns(
@@ -81,6 +87,7 @@ class StillLifes {
       Point(2, 2),
       Point(1, 2),
     },
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns loaf = LifePatterns(
@@ -97,6 +104,7 @@ class StillLifes {
       Point(3, 1),
       Point(3, 2),
     },
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns boat = LifePatterns(
@@ -105,6 +113,7 @@ class StillLifes {
     size: Size(3, 3),
     generations: 0,
     cells: {Point(0, 1), Point(0, 0), Point(1, 0), Point(2, 1), Point(1, 2)},
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns tub = LifePatterns(
@@ -113,6 +122,7 @@ class StillLifes {
     size: Size(3, 3),
     generations: 0,
     cells: {Point(1, 0), Point(2, 1), Point(1, 2), Point(0, 1)},
+    sourceClass: sourceClass,
   );
 
   static final List<LifePatterns> all = [block, beeHive, loaf, boat, tub];
@@ -120,6 +130,7 @@ class StillLifes {
 
 class Oscillators {
   static const String category = "Oscillateurs";
+  static final String sourceClass = (Oscillators).toString();
 
   static final LifePatterns blinker = LifePatterns(
     name: "Blinker",
@@ -127,6 +138,7 @@ class Oscillators {
     size: Size(3, 3),
     generations: 2,
     cells: {Point(0, 1), Point(1, 1), Point(2, 1)},
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns figureEight = LifePatterns(
@@ -148,6 +160,7 @@ class Oscillators {
       Point(5, 4),
       Point(5, 5),
     },
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns pulsar = LifePatterns(
@@ -205,6 +218,7 @@ class Oscillators {
       Point(3, 12),
       Point(2, 12),
     },
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns pentaDecathlon = LifePatterns(
@@ -225,6 +239,7 @@ class Oscillators {
       Point(7, 2),
       Point(8, 1),
     },
+    sourceClass: sourceClass,
   );
 
   static final List<LifePatterns> all = [
@@ -237,6 +252,7 @@ class Oscillators {
 
 class Spaceships {
   static const String category = "Vaisseaux";
+  static final String sourceClass = (Spaceships).toString();
 
   // Left down
   static final LifePatterns glider = LifePatterns(
@@ -245,10 +261,11 @@ class Spaceships {
     size: Size(3, 3),
     generations: 4,
     cells: {Point(0, 2), Point(1, 2), Point(2, 2), Point(2, 1), Point(1, 0)},
+    sourceClass: sourceClass,
   );
 
   // Left
-  static final LifePatterns lightWeightSpacship = LifePatterns(
+  static final LifePatterns lightWeightSpaceship = LifePatterns(
     name: "Light Weight Spaceship",
     category: category,
     size: Size(5, 4),
@@ -264,6 +281,7 @@ class Spaceships {
       Point(4, 2),
       Point(4, 1),
     },
+    sourceClass: sourceClass,
   );
 
   // Left
@@ -285,6 +303,7 @@ class Spaceships {
       Point(5, 2),
       Point(4, 1),
     },
+    sourceClass: sourceClass,
   );
 
   // Left
@@ -308,11 +327,12 @@ class Spaceships {
       Point(6, 3),
       Point(6, 2),
     },
+    sourceClass: sourceClass,
   );
 
   static final List<LifePatterns> all = [
     glider,
-    lightWeightSpacship,
+    lightWeightSpaceship,
     middleWeightSpaceship,
     heavyWeightSpaceship,
   ];
@@ -320,6 +340,7 @@ class Spaceships {
 
 class Generators {
   static const String category = "Générateurs";
+  static final String sourceClass = (Generators).toString();
 
   static final LifePatterns gun = LifePatterns(
     name: "Gospel's glider gun",
@@ -364,6 +385,7 @@ class Generators {
       Point(35, 2),
       Point(35, 3),
     },
+    sourceClass: sourceClass,
   );
 
   static final List<LifePatterns> all = [gun];
@@ -371,6 +393,7 @@ class Generators {
 
 class Methuselah {
   static const String category = "Mathusalem";
+  static final String sourceClass = (Methuselah).toString();
 
   static final LifePatterns arcon = LifePatterns(
     name: "Arcon",
@@ -386,6 +409,7 @@ class Methuselah {
       Point(5, 2),
       Point(6, 2),
     },
+    sourceClass: sourceClass,
   );
 
   static final LifePatterns rabbits = LifePatterns(
@@ -404,6 +428,7 @@ class Methuselah {
       Point(5, 2),
       Point(7, 3),
     },
+    sourceClass: sourceClass,
   );
 
   static final List<LifePatterns> all = [arcon, rabbits];

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" shape-rendering="crispEdges">
+  <!-- Fond de la grille -->
+  <rect x="0" y="0" width="240" height="200" fill="#FFFFFF"/>
+
+  <!-- Lignes de la grille -->
+  <g stroke="#C7C4D8" stroke-width="2" fill="none">
+    <!-- Verticales -->
+    <path d="
+      M0 0 V200
+      M40 0 V200
+      M80 0 V200
+      M120 0 V200
+      M160 0 V200
+      M200 0 V200
+      M240 0 V200"/>
+    <!-- Horizontales -->
+    <path d="
+      M0 0 H240
+      M0 40 H240
+      M0 80 H240
+      M0 120 H240
+      M0 160 H240
+      M0 200 H240"/>
+  </g>
+
+  <!-- Cellules vivantes -->
+  <g fill="#000000">
+    <rect x="41" y="81" width="38" height="38"/>
+    <rect x="81" y="41" width="38" height="38"/>
+    <rect x="121" y="41" width="38" height="38"/>
+    <rect x="161" y="81" width="38" height="38"/>
+    <rect x="121" y="121" width="38" height="38"/>
+    <rect x="81" y="121" width="38" height="38"/>
+  </g>
+</svg>

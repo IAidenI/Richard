@@ -7,10 +7,15 @@ class LifeLogique {
   Set<Point<int>> _initialCell = <Point<int>>{};
   Set<Point<int>> get getInitialCell => _initialCell;
   int _generation = -1;
+  int _counterCellsAlive = 0;
+  int get getCounterCellsAlive => _counterCellsAlive;
 
   Map<int, Chunk> _chunks = {};
   Map<int, Chunk> get getChunks => _chunks;
-  void clear() => _chunks = {};
+  void clear() {
+    _chunks = {};
+    _counterCellsAlive = 0;
+  }
 
   LifeLogique();
 
@@ -21,6 +26,8 @@ class LifeLogique {
 
   Set<Point<int>> startNextGeneration({int generation = -1}) {
     if (generation != -1) _generation = generation;
+
+    _counterCellsAlive = 0;
 
     final candidates = <Point<int>>{};
     for (var chunk in _chunks.entries) {
@@ -80,6 +87,7 @@ class LifeLogique {
     for (var chunk in _chunks.values) {
       Set<Point<int>> allCells = chunk.getAllCells();
       for (var chunkCell in allCells) {
+        _counterCellsAlive++;
         newGeneration.add(chunkCell);
       }
     }

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" shape-rendering="crispEdges">
+  <!-- Fond de la grille -->
+  <rect x="0" y="0" width="480" height="480" fill="#FFFFFF"/>
+
+  <!-- Lignes de la grille -->
+  <g stroke="#C7C4D8" stroke-width="2" fill="none">
+    <!-- Verticales -->
+    <path d="
+      M0 0 V480
+      M40 0 V480
+      M80 0 V480
+      M120 0 V480
+      M160 0 V480
+      M200 0 V480
+      M240 0 V480
+      M280 0 V480
+      M320 0 V480
+      M360 0 V480
+      M400 0 V480
+      M440 0 V480
+      M480 0 V480"/>
+    <!-- Horizontales -->
+    <path d="
+      M0 0 H480
+      M0 40 H480
+      M0 80 H480
+      M0 120 H480
+      M0 160 H480
+      M0 200 H480
+      M0 240 H480
+      M0 280 H480
+      M0 320 H480
+      M0 360 H480
+      M0 400 H480
+      M0 440 H480
+      M0 480 H480"/>
+  </g>
+
+  <!-- Cellules vivantes -->
+  <g fill="#000000">
+
+    <rect x="121" y="121" width="38" height="38"/>
+    <rect x="161" y="121" width="38" height="38"/>
+    <rect x="201" y="121" width="38" height="38"/>
+    <rect x="121" y="161" width="38" height="38"/>
+    <rect x="161" y="161" width="38" height="38"/>
+    <rect x="201" y="161" width="38" height="38"/>
+    <rect x="121" y="201" width="38" height="38"/>
+    <rect x="161" y="201" width="38" height="38"/>
+    <rect x="201" y="201" width="38" height="38"/>
+
+    <rect x="241" y="241" width="38" height="38"/>
+    <rect x="281" y="241" width="38" height="38"/>
+    <rect x="321" y="241" width="38" height="38"/>
+    <rect x="241" y="281" width="38" height="38"/>
+    <rect x="281" y="281" width="38" height="38"/>
+    <rect x="321" y="281" width="38" height="38"/>
+    <rect x="241" y="321" width="38" height="38"/>
+    <rect x="281" y="321" width="38" height="38"/>
+    <rect x="321" y="321" width="38" height="38"/>
+  </g>
+</svg>

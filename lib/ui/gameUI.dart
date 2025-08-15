@@ -1,5 +1,6 @@
 import 'dart:math';
-
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:richard/assets/constants.dart';
@@ -7,7 +8,6 @@ import 'package:richard/dbug.dart';
 import 'package:richard/modeles/life.dart';
 import 'package:richard/modeles/patterns.dart';
 import 'package:richard/ui/theme.dart';
-import 'package:richard/ui/weatherUI.dart';
 
 // ==================================
 // ====-------  DARWINGS  -------====
@@ -122,12 +122,26 @@ class CellPaint extends CustomPainter {
   }
 }
 
+/*
+  Permet de crée un cadre avec un légé effet dégradé vers l'intérieur
+*/
 class FrameGradient extends CustomPainter {
   final Color color;
+  final int gradient;
+  final double alpha;
 
-  FrameGradient({super.repaint, required this.color});
+  FrameGradient({
+    super.repaint,
+    required this.color,
+    this.gradient = 20,
+    this.alpha = 0.8,
+  });
 
-  Color addToColor(Color color, {int amount = 20, double alphaFactor = 0.8}) {
+  Color addToColor({
+    required Color color,
+    required int amount,
+    required double alphaFactor,
+  }) {
     int clamp(int value) => value.clamp(0, 255);
 
     return Color.fromARGB(
@@ -141,9 +155,19 @@ class FrameGradient extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double strokeWidth = 2;
+
+    // Crée 3 cadre, avec un décalage passé en paramètre, par défaut il est de +20
     Color color1 = color;
-    Color color2 = addToColor(color);
-    Color color3 = addToColor(color2);
+    Color color2 = addToColor(
+      color: color,
+      amount: gradient,
+      alphaFactor: alpha,
+    );
+    Color color3 = addToColor(
+      color: color2,
+      amount: gradient,
+      alphaFactor: alpha,
+    );
 
     Paint frame1 = Paint()
       ..strokeWidth = strokeWidth
@@ -160,7 +184,7 @@ class FrameGradient extends CustomPainter {
       ..color = color3
       ..style = PaintingStyle.stroke;
 
-    // Ajoute les contraintes pour les bords arrondis
+    // Calcul l'emplacement des 3 cadres
     final rect1 = Rect.fromLTWH(0, 0, size.width, size.height);
     final rect2 = Rect.fromLTWH(
       strokeWidth,
@@ -175,7 +199,7 @@ class FrameGradient extends CustomPainter {
       size.height - strokeWidth * 4,
     );
 
-    // Dessine le rectangle
+    // Dessine les cadres
     canvas.drawRect(rect1, frame1);
     canvas.drawRect(rect2, frame2);
     canvas.drawRect(rect3, frame3);
@@ -187,9 +211,340 @@ class FrameGradient extends CustomPainter {
   }
 }
 
+class FrameInformation extends CustomPainter {
+  final double strokeMajor;
+  final double strokeMinor;
+  final double cut;
+
+  FrameInformation({
+    super.repaint,
+    this.strokeMajor = 5,
+    this.strokeMinor = 1,
+    this.cut = 20,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint background = Paint()
+      ..color = const Color.fromARGB(100, 0, 0, 0)
+      ..style = PaintingStyle.fill;
+
+    Paint majorFrame = Paint()
+      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..strokeWidth = strokeMajor
+      ..style = PaintingStyle.stroke;
+
+    Paint minorFrame = Paint()
+      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..strokeWidth = strokeMinor
+      ..style = PaintingStyle.stroke;
+
+    Paint cornerFrame = Paint()
+      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..style = PaintingStyle.fill;
+
+    Rect rectBackground = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    Offset padding = Offset(7, 7);
+    Offset paddingCorner = Offset(1, 1);
+    Offset gap = Offset(strokeMinor, strokeMinor);
+
+    // drawRect va centrer au milieu du trait donc pour une largeur de 4
+    // au lieu d'avoir |■■■■ se sera ■■|■■, donc à chaque fois il faut ajouter
+    // le stroke / 2 du précédent et le stroke / 2 du suivant
+    Offset offset = Offset(
+      padding.dx + strokeMinor / 2,
+      padding.dy + strokeMinor / 2,
+    );
+
+    // Pour un chanfrein de 45°, le déplacement réel entre les deux points est de
+    // √2·d On se déplace en réalité de x=d et y=d, donc le chanfrein est une droite de y=x
+    // donc si on prend juste l'offset on se déplace de √(d^2 + d^2) car pythagore et donc √(2·d^2)
+    // => √2·√d^2 => √2·d donc pour avoir le bon offset il faut trouver un delta tel que
+    // √(Δ^2 + Δ^2) = d => √2·Δ = d => Δ = d / √2 donc pour les chanfrein il faut en plus
+    // ajouter/enlever cd delta
+
+    double ax(Offset o) => o.dx * (math.sqrt(2) - 1);
+    double ay(Offset o) => o.dy * (math.sqrt(2) - 1);
+
+    double ax0 = ax(offset);
+    double ay0 = ay(offset);
+
+    final pathMinorExt = Path()
+      // Démarre sur le bord supérieur, après le chanfrein haut-gauche
+      ..moveTo(cut + ay0, offset.dy)
+      // Trace la ligne supérieure jusqu’avant le chanfrein haut-droit
+      ..lineTo(size.width - cut - ay0, offset.dy)
+      // Trace le chanfrein haut-droit (segment diagonal)
+      ..lineTo(size.width - offset.dx, cut + ax0)
+      // Trace le bord droit jusqu’avant le chanfrein bas-droit
+      ..lineTo(size.width - offset.dx, size.height - cut - ax0)
+      // Trace le chanfrein bas-droit (segment diagonal)
+      ..lineTo(size.width - cut - ay0, size.height - offset.dy)
+      // Trace le bord inférieur jusqu’avant le chanfrein bas-gauche
+      ..lineTo(cut + ay0, size.height - offset.dy)
+      // Trace le chanfrein bas-gauche (segment diagonal)
+      ..lineTo(offset.dx, size.height - cut - ax0)
+      // Trace le bord gauche jusqu’avant le chanfrein haut-gauche
+      ..lineTo(offset.dx, cut + ax0)
+      // Ferme le chemin (retrace le chanfrein haut-gauche implicite)
+      ..close();
+
+    // Crée le triangle pour faire le coin en haut à gauche
+    final g = strokeMinor; // écart visible entre les 2 diagonales
+    final d = g * math.sqrt2; // décalage à appliquer sur x/y
+
+    // Sommets du triangle de bordure
+    Offset A = Offset(
+      offset.dx + paddingCorner.dx,
+      offset.dy + paddingCorner.dy,
+    );
+    Offset B = Offset(
+      (cut + ay0) - (paddingCorner.dy + ay0),
+      offset.dy + paddingCorner.dy,
+    );
+    Offset C = Offset(
+      offset.dx + paddingCorner.dy,
+      (cut + ax0) - (paddingCorner.dx + ax0),
+    );
+
+    // Sommets du triangle de remplissage
+    Offset A2 = A + Offset(d, d); // avance le coin vers le bas-droite
+    Offset B2 = Offset(
+      B.dx - d - paddingCorner.dx,
+      B.dy + paddingCorner.dy,
+    ); // recule sur l’axe x
+    Offset C2 = Offset(
+      C.dx + paddingCorner.dy,
+      C.dy - d - paddingCorner.dy,
+    ); // recule sur l’axe y
+
+    final topLeftCornerBorder = Path()
+      ..moveTo(A.dx, A.dy)
+      ..lineTo(B.dx, B.dy)
+      ..lineTo(C.dx, C.dy)
+      ..close();
+
+    final topLeftCorner = Path()
+      ..moveTo(A2.dx, A2.dy)
+      ..lineTo(B2.dx, B2.dy)
+      ..lineTo(C2.dx, C2.dy)
+      ..close();
+
+    /// Crée le triangle pour faire le coin en haut à droite
+
+    // Sommets du triangle de bordure
+    A = Offset(
+      size.width - (offset.dx + paddingCorner.dx),
+      offset.dy + paddingCorner.dy,
+    );
+    B = Offset(
+      size.width - ((cut + ay0) - (paddingCorner.dy + ay0)),
+      offset.dy + paddingCorner.dy,
+    );
+    C = Offset(
+      size.width - (offset.dx + paddingCorner.dy),
+      (cut + ax0) - (paddingCorner.dx + ax0),
+    );
+
+    // Sommets du triangle de remplissage
+    A2 = A + Offset(-d, d); // avance le coin vers le bas-droite
+    B2 = Offset(
+      B.dx + d + paddingCorner.dx,
+      B.dy + paddingCorner.dy,
+    ); // recule sur l’axe x
+    C2 = Offset(
+      C.dx - paddingCorner.dy,
+      C.dy - d - paddingCorner.dy,
+    ); // recule sur l’axe y
+
+    final topRightCornerBorder = Path()
+      ..moveTo(A.dx, A.dy)
+      ..lineTo(B.dx, B.dy)
+      ..lineTo(C.dx, C.dy)
+      ..close();
+
+    final topRightCorner = Path()
+      ..moveTo(A2.dx, A2.dy)
+      ..lineTo(B2.dx, B2.dy)
+      ..lineTo(C2.dx, C2.dy)
+      ..close();
+
+    /// Crée le triangle pour faire le coin en bas à droite
+
+    // Sommets du triangle de bordure
+    A = Offset(
+      size.width - (offset.dx + paddingCorner.dx),
+      size.height - (offset.dy + paddingCorner.dy),
+    );
+    B = Offset(
+      size.width - ((cut + ay0) - (paddingCorner.dy + ay0)),
+      size.height - (offset.dy + paddingCorner.dy),
+    ); // bas
+    C = Offset(
+      size.width - (offset.dx + paddingCorner.dy),
+      size.height - ((cut + ax0) - (paddingCorner.dx + ax0)),
+    ); // droite
+
+    // Sommets du triangle de remplissage
+    A2 = A + Offset(-d, -d);
+    B2 = Offset(
+      B.dx + d + paddingCorner.dx,
+      B.dy - paddingCorner.dy,
+    ); // bas : “rabat” vers le HAUT
+    C2 = Offset(
+      C.dx - paddingCorner.dy,
+      C.dy + d + paddingCorner.dy,
+    ); // droite : avance vers le BAS
+
+    final botRightCornerBorder = Path()
+      ..moveTo(A.dx, A.dy)
+      ..lineTo(B.dx, B.dy)
+      ..lineTo(C.dx, C.dy)
+      ..close();
+
+    final botRightCorner = Path()
+      ..moveTo(A2.dx, A2.dy)
+      ..lineTo(B2.dx, B2.dy)
+      ..lineTo(C2.dx, C2.dy)
+      ..close();
+
+    /// Crée le triangle pour faire le coin en bas à gauche
+
+    // Sommets du triangle de bordure
+    A = Offset(
+      offset.dx + paddingCorner.dx,
+      size.height - (offset.dy + paddingCorner.dy),
+    );
+    B = Offset(
+      (cut + ay0) - (paddingCorner.dy + ay0),
+      size.height - (offset.dy + paddingCorner.dy),
+    ); // bas
+    C = Offset(
+      offset.dx + paddingCorner.dy,
+      size.height - ((cut + ax0) - (paddingCorner.dx + ax0)),
+    ); // gauche
+
+    // Sommets du triangle de remplissage
+    A2 = A + Offset(d, -d);
+    B2 = Offset(
+      B.dx - d - paddingCorner.dx,
+      B.dy - paddingCorner.dy,
+    ); // bas : “rabat” vers le HAUT
+    C2 = Offset(
+      C.dx + paddingCorner.dy,
+      C.dy + d + paddingCorner.dy,
+    ); // gauche : avance vers le BAS
+
+    final botLeftCornerBorder = Path()
+      ..moveTo(A.dx, A.dy)
+      ..lineTo(B.dx, B.dy)
+      ..lineTo(C.dx, C.dy)
+      ..close();
+
+    final botLeftCorner = Path()
+      ..moveTo(A2.dx, A2.dy)
+      ..lineTo(B2.dx, B2.dy)
+      ..lineTo(C2.dx, C2.dy)
+      ..close();
+
+    // Calcule du nouveau cadre
+
+    offset = Offset(
+      offset.dx + gap.dx + (strokeMinor + strokeMajor) / 2,
+      offset.dy + gap.dy + (strokeMinor + strokeMajor) / 2,
+    );
+
+    ax0 = ax(offset);
+    ay0 = ay(offset);
+
+    final pathMajor = Path()
+      // Démarre sur le bord supérieur, après le chanfrein haut-gauche
+      ..moveTo(cut + ay0, offset.dy)
+      // Trace la ligne supérieure jusqu’avant le chanfrein haut-droit
+      ..lineTo(size.width - cut - ay0, offset.dy)
+      // Trace le chanfrein haut-droit (segment diagonal)
+      ..lineTo(size.width - offset.dx, cut + ax0)
+      // Trace le bord droit jusqu’avant le chanfrein bas-droit
+      ..lineTo(size.width - offset.dx, size.height - cut - ax0)
+      // Trace le chanfrein bas-droit (segment diagonal)
+      ..lineTo(size.width - cut - ay0, size.height - offset.dy)
+      // Trace le bord inférieur jusqu’avant le chanfrein bas-gauche
+      ..lineTo(cut + ay0, size.height - offset.dy)
+      // Trace le chanfrein bas-gauche (segment diagonal)
+      ..lineTo(offset.dx, size.height - cut - ax0)
+      // Trace le bord gauche jusqu’avant le chanfrein haut-gauche
+      ..lineTo(offset.dx, cut + ax0)
+      // Ferme le chemin (retrace le chanfrein haut-gauche implicite)
+      ..close();
+
+    // Calcule du nouveau cadre
+
+    offset = Offset(
+      offset.dx + (strokeMajor + strokeMinor) / 2 + gap.dx,
+      offset.dy + (strokeMajor + strokeMinor) / 2 + gap.dy,
+    );
+
+    ax0 = ax(offset);
+    ay0 = ay(offset);
+
+    final pathMinorInt = Path()
+      // Démarre sur le bord supérieur, après le chanfrein haut-gauche
+      ..moveTo(cut + ay0, offset.dy)
+      // Trace la ligne supérieure jusqu’avant le chanfrein haut-droit
+      ..lineTo(size.width - cut - ay0, offset.dy)
+      // Trace le chanfrein haut-droit (segment diagonal)
+      ..lineTo(size.width - offset.dx, cut + ax0)
+      // Trace le bord droit jusqu’avant le chanfrein bas-droit
+      ..lineTo(size.width - offset.dx, size.height - cut - ax0)
+      // Trace le chanfrein bas-droit (segment diagonal)
+      ..lineTo(size.width - cut - ay0, size.height - offset.dy)
+      // Trace le bord inférieur jusqu’avant le chanfrein bas-gauche
+      ..lineTo(cut + ay0, size.height - offset.dy)
+      // Trace le chanfrein bas-gauche (segment diagonal)
+      ..lineTo(offset.dx, size.height - cut - ax0)
+      // Trace le bord gauche jusqu’avant le chanfrein haut-gauche
+      ..lineTo(offset.dx, cut + ax0)
+      // Ferme le chemin (retrace le chanfrein haut-gauche implicite)
+      ..close();
+
+    canvas.drawRect(rectBackground, background);
+
+    canvas.drawPath(pathMinorExt, minorFrame);
+    canvas.drawPath(pathMajor, majorFrame);
+    canvas.drawPath(pathMinorInt, minorFrame);
+
+    canvas.drawPath(topLeftCornerBorder, minorFrame);
+    canvas.drawPath(topLeftCorner, cornerFrame);
+
+    canvas.drawPath(topRightCornerBorder, minorFrame);
+    canvas.drawPath(topRightCorner, cornerFrame);
+
+    canvas.drawPath(botRightCornerBorder, minorFrame);
+    canvas.drawPath(botRightCorner, cornerFrame);
+
+    canvas.drawPath(botLeftCornerBorder, minorFrame);
+    canvas.drawPath(botLeftCorner, cornerFrame);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
+
 // ===================================================
 // ====-------  CUSTOM EXISTING COMPONANT  -------====
 // ===================================================
+class InformationsFrame extends StatelessWidget {
+  final Widget child;
+  const InformationsFrame({super.key, required this.child});
+
+  @override
+  Widget build(Object context) {
+    return CustomPaint(painter: FrameInformation(), child: child);
+  }
+}
 
 // ===============================
 // ====-------  POPUP  -------====
@@ -198,9 +553,9 @@ class FrameGradient extends CustomPainter {
   Permet d'obtenir un popup générique personalisable
 */
 class PopupWorkShop extends StatefulWidget {
-  final GameLifeThemes theme;
   final List<List<LifePatterns>> patterns = LifePatterns.all;
   final double delimiterSize = 2.0;
+  final GameLifeThemes theme;
 
   PopupWorkShop({super.key, required this.theme});
 
@@ -209,33 +564,40 @@ class PopupWorkShop extends StatefulWidget {
 }
 
 class _PopupWorkShopState extends State<PopupWorkShop> {
-  int _selectedMenuIndex = 0;
+  int _selectedMenuIndex = 0; // Index pour la catégorie selectionné
   int _selectedItemIndex = 0;
 
   Widget _buildScrollMenu() {
     return SizedBox(
       height: 40,
+      // Crée un menu déroulant horizontalement
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Container(
+          // Crée un fond uniforme
           decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 238, 238, 238),
+            color: widget.theme.getUnselectedMenu,
             shape: BoxShape.rectangle,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
+            // Crée des petits contour pour chaque élément des patterns
+            // pour indiqué si ils sont séléctionné ou non
             children: List.generate(widget.patterns.length, (index) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
                 child: GestureDetector(
-                  onTap: () => setState(() => _selectedMenuIndex = index),
+                  onTap: () => setState(
+                    () => _selectedMenuIndex = index,
+                  ), // Mets à jour l'objet selectionné et notifie la class
                   child: Container(
                     decoration: BoxDecoration(
+                      // Mets à jour la couleur du menu selectionné
                       color: _selectedMenuIndex == index
-                          ? const Color.fromARGB(255, 44, 44, 44)
-                          : const Color.fromARGB(255, 238, 238, 238),
+                          ? widget.theme.getSelectedMenu
+                          : widget.theme.getUnselectedMenu,
                       shape: BoxShape.rectangle,
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -244,11 +606,10 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
                         vertical: 5,
                         horizontal: 12,
                       ),
+                      // Insert le nom du menu
                       child: Text(
                         widget.patterns[index].first.category,
-                        style: TextStyle(
-                          color: const Color.fromARGB(255, 187, 187, 187),
-                        ),
+                        style: widget.theme.popupMenuLabel(),
                       ),
                     ),
                   ),
@@ -261,38 +622,52 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
     );
   }
 
-  Widget _buildButtoon({required String data, required VoidCallback onTap}) {
+  Widget _buildButton({
+    required String data,
+    required VoidCallback onTap,
+    Color color = Colors.black,
+  }) {
+    // Crée un bouton personalisable
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: widget.theme.getButtonColor,
+          color: color,
           shape: BoxShape.rectangle,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           child: Center(
-            child: Text(data, style: TextStyle(color: widget.theme.getPrimary)),
+            child: Text(data, style: widget.theme.textButtonStyle()),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoSection(List<String> infos, int index) {
+  Widget _buildInfoSection({
+    required List<String> infos,
+    required int index,
+    required String category,
+    required String name,
+  }) {
     return GestureDetector(
-      onTap: () => setState(() => _selectedItemIndex = index),
+      onTap: () => setState(
+        () => _selectedItemIndex = index,
+      ), // Mets à jour l'objet selectionné et notifie la class
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(10),
+          // Permet de pouvoir scroller horizontalement si la card est trop grande à cause des contraintes
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Container(
               decoration: BoxDecoration(
+                // Mets à jour la couleur de la card selectionné
                 color: _selectedItemIndex == index
-                    ? const Color.fromARGB(255, 44, 44, 44)
-                    : const Color.fromARGB(255, 217, 217, 217),
+                    ? widget.theme.getSelectedCard
+                    : widget.theme.getUnselectedCard,
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(5),
               ),
@@ -301,21 +676,23 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Affiche l'image correspondante
                     SizedBox(
                       width: 75,
                       height: 75,
                       child: Image.asset(
-                        "assets/games/GameOfLife/patterns/glider.png",
+                        "assets/games/GameOfLife/$category/gif/$name.gif",
                       ),
                     ),
 
                     const SizedBox(width: 5),
 
+                    // Affiche les informations le concernant
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         for (var info in infos) ...[
-                          Text(info, style: widget.theme.popupLabel()),
+                          Text(info, style: widget.theme.popupContentLabel()),
                         ],
                       ],
                     ),
@@ -334,34 +711,47 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
       constraints: BoxConstraints(maxHeight: 350),
       child: IntrinsicWidth(
         child: CustomPaint(
+          // Ajoute un cadre avec un effet dégradé
           foregroundPainter: FrameGradient(
-            color: const Color.fromARGB(255, 100, 100, 100),
+            color: widget.theme.getFrameColor,
+            gradient: -20,
           ),
+          // Crée une liste déroulante pour les items
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             padding: const EdgeInsets.all(5),
             child: Column(
               children: [
+                // Parmis la catégorie selectionné, on affiche les items qu'elle contient avec ses informations
                 for (
                   int item = 0;
                   item < widget.patterns[_selectedMenuIndex].length;
                   item++
                 ) ...[
-                  _buildInfoSection([
-                    widget.patterns[_selectedMenuIndex][item].getFormattedName,
-                    widget.patterns[_selectedMenuIndex][item].getFormattedSize,
-                    widget
+                  // Pour chaque item création d'une card personalisé
+                  _buildInfoSection(
+                    infos: [
+                      widget
+                          .patterns[_selectedMenuIndex][item]
+                          .getFormattedName,
+                      widget
+                          .patterns[_selectedMenuIndex][item]
+                          .getFormattedSize,
+                      widget
+                          .patterns[_selectedMenuIndex][item]
+                          .getFormattedGenerations,
+                    ],
+                    index: item,
+                    // Permet de récupèrer le nom de la class associé et le nom
+                    // sans caractères spéciaux pour le chemin d'accès de l'image
+                    category: widget
                         .patterns[_selectedMenuIndex][item]
-                        .getFormattedGenerations,
-                  ], item),
+                        .getSourceClass,
+                    name: widget.patterns[_selectedMenuIndex][item].getName
+                        .toLowerCase()
+                        .replaceAll(RegExp(r'[^a-z0-9]'), ''),
+                  ),
                 ],
-                /*for (var pattern in widget.patterns[_selectedMenuIndex]) ...[
-                  _buildInfoSection([
-                    pattern.getFormattedName,
-                    pattern.getFormattedSize,
-                    pattern.getFormattedGenerations,
-                  ]),
-                ],*/
               ],
             ),
           ),
@@ -373,7 +763,7 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: widget.theme.getPrimary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: IntrinsicWidth(
         child: Padding(
@@ -381,33 +771,44 @@ class _PopupWorkShopState extends State<PopupWorkShop> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Crée un cadre et place à l'interieur les données passé en paramètre
               const SizedBox(height: 15),
 
-              Text("Workshop", style: widget.theme.popupTitle()),
+              // Crée la section qui contient le titre et le logo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.handyman, color: widget.theme.getPopupTitleColor),
+                  const SizedBox(width: 5),
+                  Text("Workshop", style: widget.theme.popupTitle()),
+                ],
+              ),
 
               const SizedBox(height: 15),
 
+              // Menu déroulant horizontalement
               _buildScrollMenu(),
 
               const SizedBox(height: 15),
 
+              // Cadre + Contenu déroulant verticalement
               _buildCategoryCard(),
 
               const SizedBox(height: 15),
 
-              // Crée un bouton personalisé qui prend la même largeur que le cadre
+              // Boutons valider et annuler
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildButtoon(
+                  _buildButton(
                     data: "Valider",
-                    onTap: () => Navigator.of(
-                      context,
-                    ).pop(Point<int>(_selectedMenuIndex, _selectedItemIndex)),
+                    color: widget.theme.getButtonColorOK,
+                    onTap: () => Navigator.of(context).pop(
+                      Point<int>(_selectedMenuIndex, _selectedItemIndex),
+                    ), // Renvoie la catégorie et l'objet selectionné
                   ),
-                  _buildButtoon(
+                  _buildButton(
                     data: "Annuler",
+                    color: widget.theme.getButtonColorExit,
                     onTap: () => Navigator.of(context).pop(null),
                   ),
                 ],
@@ -557,7 +958,7 @@ class _GridZoomState extends State<GridZoom> {
       transformationController: _controller,
       constrained: false,
       minScale: 0.3,
-      maxScale: 10,
+      maxScale: 20,
       child: GestureDetector(
         // Détecte chaque clique dans la grille et détermine sa position
         onTapUp: (TapUpDetails details) {
@@ -617,4 +1018,111 @@ class _GridZoomState extends State<GridZoom> {
       ),
     );
   }
+}
+
+class RuneDividerVertical extends StatelessWidget {
+  const RuneDividerVertical({
+    super.key,
+    this.color = const Color(0xFFECD48C),
+    this.thickness = 2,
+    this.diamondSize = 6,
+    this.flareLength = 36,
+    this.flareWidth = 18,
+  });
+
+  final Color color;
+  final double thickness; // épaisseur de la ligne
+  final double diamondSize; // demi-diagonale du losange
+  final double flareLength; // longueur de l’évasement (depuis le centre)
+  final double flareWidth; // largeur de l’évasement (depuis l’axe)
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _RuneDividerPainter(
+        color: color,
+        thickness: thickness,
+        diamondSize: diamondSize,
+        flareLength: flareLength,
+        flareWidth: flareWidth,
+      ),
+    );
+  }
+}
+
+class _RuneDividerPainter extends CustomPainter {
+  _RuneDividerPainter({
+    required this.color,
+    required this.thickness,
+    required this.diamondSize,
+    required this.flareLength,
+    required this.flareWidth,
+  });
+
+  final Color color;
+  final double thickness;
+  final double diamondSize;
+  final double flareLength;
+  final double flareWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    // bornes (au cas où le widget est petit)
+    final L = flareLength.clamp(0, size.height * 0.45);
+    final W = flareWidth.clamp(0, size.width * 0.45);
+    final t = thickness;
+
+    final paintFill = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final paintLine = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = t
+      ..strokeCap = StrokeCap.round;
+
+    // Traits finaux haut et bas
+    canvas.drawLine(Offset(cx, 0), Offset(cx, cy - L), paintLine);
+    canvas.drawLine(Offset(cx, cy + L), Offset(cx, size.height), paintLine);
+
+    // Évasement haut (trapèze pointant vers le centre)
+    final upper = Path()
+      ..moveTo(cx - t / 2, cy - L)
+      ..lineTo(cx + t / 2, cy - L)
+      ..lineTo(cx + W, cy - t / 2)
+      ..lineTo(cx - W, cy - t / 2)
+      ..close();
+
+    // Évasement bas (miroir)
+    final lower = Path()
+      ..moveTo(cx - t / 2, cy + L)
+      ..lineTo(cx + t / 2, cy + L)
+      ..lineTo(cx + W, cy + t / 2)
+      ..lineTo(cx - W, cy + t / 2)
+      ..close();
+
+    canvas.drawPath(upper, paintFill);
+    canvas.drawPath(lower, paintFill);
+
+    // Losange central
+    final diamond = Path()
+      ..moveTo(cx, cy - diamondSize)
+      ..lineTo(cx + diamondSize, cy)
+      ..lineTo(cx, cy + diamondSize)
+      ..lineTo(cx - diamondSize, cy)
+      ..close();
+
+    canvas.drawPath(diamond, paintFill);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RuneDividerPainter old) =>
+      old.color != color ||
+      old.thickness != thickness ||
+      old.diamondSize != diamondSize ||
+      old.flareLength != flareLength ||
+      old.flareWidth != flareWidth;
 }

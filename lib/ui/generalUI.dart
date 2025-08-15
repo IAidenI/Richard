@@ -106,3 +106,80 @@ class InfoDisplayer {
 /*
   Permet d'obtenir un popup générique personalisable
 */
+class PopupGeneric extends StatefulWidget {
+  final String title;
+  final List<String> content;
+  final AppTheme theme;
+
+  const PopupGeneric({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.theme,
+  });
+
+  @override
+  State<PopupGeneric> createState() => _PopupGenericState();
+}
+
+class _PopupGenericState extends State<PopupGeneric> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: widget.theme.getPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Crée un cadre et place à l'interieur les données passé en paramètre
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 15),
+                  Text(widget.title, style: widget.theme.getPopupGenericTitle),
+                  const SizedBox(height: 16),
+                  Column(
+                    children: [
+                      for (var data in widget.content)
+                        Text(data, style: widget.theme.getPopupGenericLabel),
+                      const SizedBox(height: 15),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Crée un bouton personalisé qui prend la même largeur que le cadre
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop(true);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: widget.theme.getButtonColor,
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Center(
+                      child: Text(
+                        "OK",
+                        style: widget.theme.getPupGenericTextButton,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
