@@ -7,6 +7,7 @@ abstract class AppTheme {
   Color get getSecondary;
   Color get getTertiary;
   Color get getButtonColor;
+  Color get getButtonTextColor;
   Color get getFrameColor;
 
   // Styles
@@ -23,15 +24,18 @@ abstract class AppTheme {
 class WeatherTheme implements AppTheme {
   final ColorCode currentWeather;
 
+  // Gestion des fonds colorés
   late final AssetImage _background;
   late final AssetImage _backgroundMenu;
   AssetImage get getBackground => _background;
   AssetImage get getBackgroundMenu => _backgroundMenu;
 
+  // Thèmes générales
   Color _primary = const Color.fromARGB(255, 109, 109, 109);
   Color _secondary = const Color.fromARGB(255, 198, 198, 198);
   Color _tertiary = const Color.fromARGB(60, 144, 138, 138);
   Color _buttonColor = Color.fromARGB(255, 145, 145, 158);
+  final Color _buttonTextColor = Colors.white;
   Color _frameColor = Color.fromARGB(255, 0, 0, 0);
 
   final TextStyle _popupGenericTitle = TextStyle(
@@ -61,6 +65,9 @@ class WeatherTheme implements AppTheme {
 
   @override
   Color get getButtonColor => _buttonColor;
+
+  @override
+  Color get getButtonTextColor => _buttonTextColor;
 
   @override
   Color get getFrameColor => _frameColor;
@@ -395,6 +402,7 @@ class PopupColorCode {
 // ===========================================
 
 class GameLifeThemes implements AppTheme {
+  // Gestion des couleurs de la grille
   final Color _gridBackground = const Color.fromARGB(255, 27, 24, 19);
   final Color _gridLine = Colors.black;
   final Color _cellsColor = Colors.white;
@@ -402,30 +410,42 @@ class GameLifeThemes implements AppTheme {
   Color get getGridLineColor => _gridLine;
   Color get getCellsColor => _cellsColor;
 
+  // Gestion des couleurs des boutons de validation/annulation
   final Color _buttonColorOK = const Color.fromARGB(255, 160, 100, 50);
   final Color _buttonColorExit = const Color.fromARGB(255, 106, 94, 81);
   Color get getButtonColorOK => _buttonColorOK;
   Color get getButtonColorExit => _buttonColorExit;
 
+  // Gestion des couleurs de séléction/déselection du menu pour le workshop
   final Color _selectedMenu = const Color.fromARGB(255, 178, 120, 48);
   final Color _unselectedMenu = const Color.fromARGB(255, 120, 100, 70);
   Color get getSelectedMenu => _selectedMenu;
   Color get getUnselectedMenu => _unselectedMenu;
 
+  // Gestion des couleurs de séléction/déselection des objets pour le workshop
   final Color _selectedCard = const Color.fromARGB(255, 198, 160, 112);
   final Color _unselectedCard = const Color.fromARGB(255, 164, 148, 128);
   Color get getSelectedCard => _selectedCard;
   Color get getUnselectedCard => _unselectedCard;
 
+  // Gestion des couleurs de séléction/déselection pour les icons de menu du bandeau inférieur
   final Color _iconSettings = const Color.fromARGB(255, 192, 192, 192);
   final Color _selectedIconSettings = Colors.deepPurple;
   Color get getIconSettings => _iconSettings;
   Color get getselectedIconSettings => _selectedIconSettings;
 
+  // Gestion des couleurs pour le bandeau supérieur informatif
+  final Color _informationFrame = const Color.fromARGB(255, 200, 190, 160);
+  final Color _informationBackground = const Color.fromARGB(100, 0, 0, 0);
+  Color get getInformationFrame => _informationFrame;
+  Color get getInformationBackground => _informationBackground;
+
+  // Thèmes générales
   final Color _primary = const Color.fromARGB(255, 56, 52, 52);
   final Color _secondary = Colors.black;
   final Color _tertiary = const Color.fromARGB(60, 255, 255, 255);
-  final Color _buttonColor = const Color.fromARGB(255, 160, 100, 50);
+  final Color _buttonColor = const Color.fromARGB(255, 106, 94, 81);
+  final Color _buttonTextColor = Colors.white;
   final Color _frameColor = const Color.fromARGB(255, 225, 225, 200);
 
   @override
@@ -439,6 +459,9 @@ class GameLifeThemes implements AppTheme {
 
   @override
   Color get getButtonColor => _buttonColor;
+
+  @override
+  Color get getButtonTextColor => _buttonTextColor;
 
   @override
   Color get getFrameColor => _frameColor;

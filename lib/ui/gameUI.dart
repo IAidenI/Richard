@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
@@ -211,36 +212,44 @@ class FrameGradient extends CustomPainter {
   }
 }
 
+/*
+  Permet d'afficher un cader stylisé avec 3 lignes dont celle du moliieu est plus grosse
+  avec des chanfrein sur les côtés
+*/
 class FrameInformation extends CustomPainter {
   final double strokeMajor;
   final double strokeMinor;
   final double cut;
+  final Color backgroundColor;
+  final Color frameColor;
 
   FrameInformation({
     super.repaint,
     this.strokeMajor = 5,
     this.strokeMinor = 1,
     this.cut = 20,
+    required this.backgroundColor,
+    required this.frameColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     Paint background = Paint()
-      ..color = const Color.fromARGB(100, 0, 0, 0)
+      ..color = backgroundColor
       ..style = PaintingStyle.fill;
 
     Paint majorFrame = Paint()
-      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..color = frameColor
       ..strokeWidth = strokeMajor
       ..style = PaintingStyle.stroke;
 
     Paint minorFrame = Paint()
-      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..color = frameColor
       ..strokeWidth = strokeMinor
       ..style = PaintingStyle.stroke;
 
     Paint cornerFrame = Paint()
-      ..color = const Color.fromARGB(255, 236, 212, 140)
+      ..color = frameColor
       ..style = PaintingStyle.fill;
 
     Rect rectBackground = Rect.fromLTWH(0, 0, size.width, size.height);
@@ -533,16 +542,53 @@ class FrameInformation extends CustomPainter {
   }
 }
 
+class FrameInformationDelimiter extends CustomPainter {
+  final Color frameColor;
+
+  FrameInformationDelimiter({super.repaint, required this.frameColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint line = Paint()
+      ..color = frameColor
+      ..style = PaintingStyle.fill;
+
+    // Calcul l'emplacement des 3 cadres
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    // Dessine les cadres
+    canvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(5)), line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
+
 // ===================================================
 // ====-------  CUSTOM EXISTING COMPONANT  -------====
 // ===================================================
 class InformationsFrame extends StatelessWidget {
+  final Color backgroundColor;
+  final Color frameColor;
   final Widget child;
-  const InformationsFrame({super.key, required this.child});
+  const InformationsFrame({
+    super.key,
+    required this.backgroundColor,
+    required this.frameColor,
+    required this.child,
+  });
 
   @override
   Widget build(Object context) {
-    return CustomPaint(painter: FrameInformation(), child: child);
+    return CustomPaint(
+      painter: FrameInformation(
+        backgroundColor: backgroundColor,
+        frameColor: frameColor,
+      ),
+      child: child,
+    );
   }
 }
 
@@ -918,8 +964,8 @@ class _GridZoomState extends State<GridZoom> {
         printDebug("$initCell");
       }
 
-      cellPositionsBack.addAll(widget.initialCells!);
-      cellPositionsUI.addAll(convertBackToUi(widget.initialCells!));
+      cellPositionsBack = Set.of(widget.initialCells!);
+      cellPositionsUI = convertBackToUi(cellPositionsBack);
     }
 
     if (!widget.isPaused) {
@@ -936,13 +982,15 @@ class _GridZoomState extends State<GridZoom> {
     if (widget.centerRequest) _centerGrid();
 
     // Si demandé, ajouté une liste de cellules prédéfinit
-    if (widget.initialCells != null) {
+    if (widget.initialCells != null &&
+        !setEquals(oldWidget.initialCells ?? const {}, widget.initialCells!)) {
       for (var initCell in widget.initialCells!) {
+        printDebug("Adding initial cell...");
         printDebug("$initCell");
       }
 
-      cellPositionsBack.addAll(widget.initialCells!);
-      cellPositionsUI.addAll(convertBackToUi(widget.initialCells!));
+      cellPositionsBack = Set.of(widget.initialCells!);
+      cellPositionsUI = convertBackToUi(cellPositionsBack);
     }
 
     if (oldWidget.generation != widget.generation ||
@@ -1018,111 +1066,4 @@ class _GridZoomState extends State<GridZoom> {
       ),
     );
   }
-}
-
-class RuneDividerVertical extends StatelessWidget {
-  const RuneDividerVertical({
-    super.key,
-    this.color = const Color(0xFFECD48C),
-    this.thickness = 2,
-    this.diamondSize = 6,
-    this.flareLength = 36,
-    this.flareWidth = 18,
-  });
-
-  final Color color;
-  final double thickness; // épaisseur de la ligne
-  final double diamondSize; // demi-diagonale du losange
-  final double flareLength; // longueur de l’évasement (depuis le centre)
-  final double flareWidth; // largeur de l’évasement (depuis l’axe)
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _RuneDividerPainter(
-        color: color,
-        thickness: thickness,
-        diamondSize: diamondSize,
-        flareLength: flareLength,
-        flareWidth: flareWidth,
-      ),
-    );
-  }
-}
-
-class _RuneDividerPainter extends CustomPainter {
-  _RuneDividerPainter({
-    required this.color,
-    required this.thickness,
-    required this.diamondSize,
-    required this.flareLength,
-    required this.flareWidth,
-  });
-
-  final Color color;
-  final double thickness;
-  final double diamondSize;
-  final double flareLength;
-  final double flareWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    // bornes (au cas où le widget est petit)
-    final L = flareLength.clamp(0, size.height * 0.45);
-    final W = flareWidth.clamp(0, size.width * 0.45);
-    final t = thickness;
-
-    final paintFill = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    final paintLine = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = t
-      ..strokeCap = StrokeCap.round;
-
-    // Traits finaux haut et bas
-    canvas.drawLine(Offset(cx, 0), Offset(cx, cy - L), paintLine);
-    canvas.drawLine(Offset(cx, cy + L), Offset(cx, size.height), paintLine);
-
-    // Évasement haut (trapèze pointant vers le centre)
-    final upper = Path()
-      ..moveTo(cx - t / 2, cy - L)
-      ..lineTo(cx + t / 2, cy - L)
-      ..lineTo(cx + W, cy - t / 2)
-      ..lineTo(cx - W, cy - t / 2)
-      ..close();
-
-    // Évasement bas (miroir)
-    final lower = Path()
-      ..moveTo(cx - t / 2, cy + L)
-      ..lineTo(cx + t / 2, cy + L)
-      ..lineTo(cx + W, cy + t / 2)
-      ..lineTo(cx - W, cy + t / 2)
-      ..close();
-
-    canvas.drawPath(upper, paintFill);
-    canvas.drawPath(lower, paintFill);
-
-    // Losange central
-    final diamond = Path()
-      ..moveTo(cx, cy - diamondSize)
-      ..lineTo(cx + diamondSize, cy)
-      ..lineTo(cx, cy + diamondSize)
-      ..lineTo(cx - diamondSize, cy)
-      ..close();
-
-    canvas.drawPath(diamond, paintFill);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RuneDividerPainter old) =>
-      old.color != color ||
-      old.thickness != thickness ||
-      old.diamondSize != diamondSize ||
-      old.flareLength != flareLength ||
-      old.flareWidth != flareWidth;
 }

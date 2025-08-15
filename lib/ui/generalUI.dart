@@ -1,8 +1,10 @@
 /*
   Crée un menu déroulant personalisé
 */
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:richard/ui/theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FloatingMenu extends StatefulWidget {
   final AppTheme theme;
@@ -41,7 +43,7 @@ class _FloatingMenuState extends State<FloatingMenu> {
             child: Icon(
               _menuOpen ? Icons.close : Icons.menu,
               size: 30,
-              color: Colors.white,
+              color: widget.theme.getButtonTextColor,
             ),
           ),
         );
@@ -106,16 +108,28 @@ class InfoDisplayer {
 /*
   Permet d'obtenir un popup générique personalisable
 */
+class StyledText {
+  final String text;
+  final TextStyle? style;
+  final VoidCallback? onTap;
+
+  StyledText(this.text, {this.style, this.onTap});
+}
+
 class PopupGeneric extends StatefulWidget {
   final String title;
-  final List<String> content;
+  final List<StyledText> content;
   final AppTheme theme;
+  final bool scroll;
+  final String? uri;
 
   const PopupGeneric({
     super.key,
     required this.title,
     required this.content,
     required this.theme,
+    this.scroll = false,
+    this.uri,
   });
 
   @override
@@ -123,6 +137,25 @@ class PopupGeneric extends StatefulWidget {
 }
 
 class _PopupGenericState extends State<PopupGeneric> {
+  Widget _buildContentAsRichText() {
+    return RichText(
+      text: TextSpan(
+        children: [
+          for (var entry in widget.content) ...[
+            TextSpan(
+              text: entry.text,
+              style: entry.style,
+              recognizer: entry.onTap != null
+                  ? (TapGestureRecognizer()..onTap = entry.onTap)
+                  : null,
+            ),
+          ],
+          const WidgetSpan(child: SizedBox(height: 15)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -142,13 +175,16 @@ class _PopupGenericState extends State<PopupGeneric> {
                   const SizedBox(height: 15),
                   Text(widget.title, style: widget.theme.getPopupGenericTitle),
                   const SizedBox(height: 16),
-                  Column(
-                    children: [
-                      for (var data in widget.content)
-                        Text(data, style: widget.theme.getPopupGenericLabel),
-                      const SizedBox(height: 15),
-                    ],
-                  ),
+
+                  widget.scroll
+                      ? SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: _buildContentAsRichText(),
+                          ),
+                        )
+                      : _buildContentAsRichText(),
                 ],
               ),
 

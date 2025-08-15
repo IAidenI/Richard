@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
 import 'package:richard/modeles/life.dart';
 import 'package:richard/modeles/patterns.dart';
 import 'package:richard/ui/gameUI.dart';
 import 'package:richard/ui/generalUI.dart';
 import 'package:richard/ui/theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Life extends StatefulWidget {
   const Life({super.key});
@@ -18,7 +21,6 @@ class Life extends StatefulWidget {
 class _LifeState extends State<Life> {
   GameLifeThemes theme = GameLifeThemes();
 
-  //Set<Point<int>> _initialCell = Generators.gun.translated().getCells;
   Set<Point<int>> _initialCell = <Point<int>>{};
   final LifeLogique _life = LifeLogique();
   bool _notInit = true;
@@ -31,13 +33,15 @@ class _LifeState extends State<Life> {
   int _generation = 0;
   final Duration _initialSpeed = Duration(seconds: 1);
   late Duration _generationSpeed;
-  final int _maxGenerations = 100000;
+  final int _maxGenerations = 1000000;
   late Color _fastGeneration;
   late Color _realyFastGeneration;
 
   // Gestion de la pause
   bool _isPaused = true;
   IconData _pauseIcon = Icons.pause;
+
+  final format = NumberFormat.decimalPattern('fr_FR');
 
   @override
   void initState() {
@@ -73,7 +77,9 @@ class _LifeState extends State<Life> {
           builder: (context) => PopupGeneric(
             title: 'ATTENTION',
             content: [
-              "Vous avez atteint le maximum ($_maxGenerations) de génération",
+              StyledText(
+                "Vous avez atteint le maximum ($_maxGenerations) de génération",
+              ),
             ],
             theme: theme,
           ),
@@ -150,6 +156,101 @@ class _LifeState extends State<Life> {
     );
   }
 
+  void _buildAboutPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => PopupGeneric(
+        title: 'Le jeu de la vie',
+        content: [
+          StyledText(
+            "Créé par le mathématicien John Conway en 1970,\n",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          StyledText(
+            "il s'agit d'un jeu à « zéro joueur ».\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "C'est un automate cellulaire, un modèle où chaque état\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "de la grille conduit au suivant selon des règles prédéfinies.\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "Les règles sont :\n",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          StyledText(
+            "    • Une cellule morte ayant exactement\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "      trois voisines vivantes devient vivante (naissance).\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "    • Une cellule vivante ayant moins de deux ou plus detrois\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "      voisines vivantes meurt (sous-population ou surpopulation).\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "En résumé, la vie dans les bonnes conditions engendre la vie,\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "tandis qu'un excès ou un manque entraîne la mort.\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "Ce jeu illustre comment des règles très simples peuvent\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "engendrer une complexité et des motifs fascinants.\n\n",
+            style: const TextStyle(fontSize: 16),
+          ),
+          StyledText(
+            "Source : ",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          StyledText(
+            "wikipédia",
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              fontSize: 16,
+            ),
+            onTap: () => launchUrl(
+              Uri.parse("https://fr.wikipedia.org/wiki/Jeu_de_la_vie"),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          StyledText(" - "),
+          StyledText(
+            "vidéo (EGO)",
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              fontSize: 16,
+            ),
+            onTap: () => launchUrl(
+              Uri.parse("https://www.youtube.com/watch?v=eMn43As24Bo"),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+        ],
+        theme: theme,
+        scroll: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,7 +276,7 @@ class _LifeState extends State<Life> {
                   MediaQuery.of(context).size.height,
                 ),
                 centerRequest: _center,
-                initialCells: _initialCell,
+                initialCells: Set.of(_initialCell),
                 theme: theme,
                 getCells: (cells) {
                   _initialCell = Set.of(cells);
@@ -188,20 +289,24 @@ class _LifeState extends State<Life> {
                 child: Stack(
                   children: [
                     InformationsFrame(
+                      backgroundColor: theme.getInformationBackground,
+                      frameColor: theme.getInformationFrame,
+                      // Pour garder la frame autour du child
                       child: IntrinsicWidth(
                         child: IntrinsicHeight(
                           child: Padding(
                             padding: const EdgeInsets.all(30),
                             child: Center(
                               child: Row(
-                                mainAxisSize: MainAxisSize.min, // <-- important
+                                mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  // Place les deux boutons
                                   Column(
-                                    mainAxisSize:
-                                        MainAxisSize.min, // <-- important
+                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      // Bouton pour le workshop
                                       Container(
                                         width: 35,
                                         height: 35,
@@ -215,6 +320,7 @@ class _LifeState extends State<Life> {
                                           icon: Icons.handyman,
                                           size: 25,
                                           onPressed: () async {
+                                            // Permet de lancer le workshop que si le jeu n'est pas en cours
                                             if (!_isPaused) {
                                               InfoDisplayer.buildInfoDisplayer(
                                                 context,
@@ -231,6 +337,7 @@ class _LifeState extends State<Life> {
                                               return;
                                             }
 
+                                            // Récuère le nom de la catégorie et l'objet séléctionné
                                             final indexPattern =
                                                 await showDialog<Point<int>?>(
                                                   context: context,
@@ -241,6 +348,7 @@ class _LifeState extends State<Life> {
                                                       ),
                                                 );
 
+                                            // Si un objet à été séléctionner alors mets à jours la liste initial avec et notifie tout le monde
                                             if (indexPattern != null) {
                                               setState(() {
                                                 _initialCell = LifePatterns
@@ -256,6 +364,7 @@ class _LifeState extends State<Life> {
 
                                       const SizedBox(height: 10),
 
+                                      // Bouton help
                                       Container(
                                         width: 25,
                                         height: 25,
@@ -266,17 +375,29 @@ class _LifeState extends State<Life> {
                                         child: _buildSettingsButton(
                                           icon: Icons.help,
                                           size: 15,
-                                          onPressed: () {},
+                                          onPressed: () => _buildAboutPopup(),
                                         ),
                                       ),
                                     ],
                                   ),
 
-                                  const SizedBox(width: 30),
+                                  const SizedBox(width: 15),
 
+                                  CustomPaint(
+                                    painter: FrameInformationDelimiter(
+                                      frameColor: theme.getInformationFrame,
+                                    ),
+                                    child: SizedBox(
+                                      width: 2,
+                                      height: double.infinity,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 15),
+
+                                  // Informations sur le jeu en cours
                                   Column(
-                                    mainAxisSize:
-                                        MainAxisSize.min, // <-- important
+                                    mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -292,6 +413,10 @@ class _LifeState extends State<Life> {
                                       const SizedBox(width: 10),
                                       Text(
                                         "Chunks : ${_life.getChunks.length}",
+                                        style: theme.popupContentLabel(),
+                                      ),
+                                      Text(
+                                        "Grille : ${format.format((gridSize.width / 10).toInt())}x${format.format((gridSize.height / 10).toInt())}",
                                         style: theme.popupContentLabel(),
                                       ),
                                     ],
