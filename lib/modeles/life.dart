@@ -4,11 +4,11 @@ import 'package:richard/assets/constants.dart';
 import 'package:richard/dbug.dart';
 
 class LifeLogique {
-  Set<Point<int>> _initialCell = <Point<int>>{};
-  Set<Point<int>> get getInitialCell => _initialCell;
   int _generation = -1;
   int _counterCellsAlive = 0;
   int get getCounterCellsAlive => _counterCellsAlive;
+  void incrementCounterCellsAlive() => _counterCellsAlive++;
+  void decrementCounterCellsAlive() => _counterCellsAlive--;
 
   Map<int, Chunk> _chunks = {};
   Map<int, Chunk> get getChunks => _chunks;
@@ -19,13 +19,25 @@ class LifeLogique {
 
   LifeLogique();
 
-  bool reStart(Set<Point<int>> initialCell) {
-    _initialCell = initialCell;
-    clear();
-    return _initChunks();
+  void editCell(Point<int> global, int cellState) {
+    // Récupère le chunk correspondant
+    Point<int> chunkPos = realToChunk(global.x, global.y);
+
+    // Récupère l'id du chunk grâce aux coordonnées
+    int key = _generateUniqueKey(chunkPos);
+
+    // Récupère le chunk correspondant, si inexistant le crée
+    _chunks.putIfAbsent(key, () => Chunk(chunkPos));
+    Chunk chunk = _chunks[key]!;
+
+    // Récupère les coordonnées du point local au chunk
+    Point<int> local = localToChunk(global.x, global.y);
+
+    // Edite la cellule
+    chunk.editChunk(local.x, local.y, cellState);
   }
 
-  Set<Point<int>> startNextGeneration({int generation = -1}) {
+  void startNextGeneration({int generation = -1}) {
     if (generation != -1) _generation = generation;
 
     _counterCellsAlive = 0;
@@ -83,16 +95,6 @@ class LifeLogique {
       c.swap();
     }
 
-    // Stock les nouvelles cellules pour les possibles pauses
-    Set<Point<int>> newGeneration = <Point<int>>{};
-    for (var chunk in _chunks.values) {
-      Set<Point<int>> allCells = chunk.getAllCells();
-      for (var chunkCell in allCells) {
-        _counterCellsAlive++;
-        newGeneration.add(chunkCell);
-      }
-    }
-
     printDebug("[ DEBUG ] == End generation ==");
     printChunks();
     printDebug("[ DEBUG ] ====================");
@@ -100,7 +102,6 @@ class LifeLogique {
     printDebug("");
     printDebug("");
     displayGameStats();
-    return newGeneration;
   }
 
   // Fonctions permettant la convertion (pour mieux comprendre voir exemple en dessous de la classe)
@@ -126,7 +127,7 @@ class LifeLogique {
       Point<int>(key >> 32, (key & 0xffffffff).toSigned(32));
 
   // Permet de convertir les coordonées en coordonées relatif au chunk
-  bool _initChunks() {
+  /*bool initChunks() {
     if (_initialCell.isEmpty) return true;
 
     printDebug("[ DEBUG ] Generating chunks...");
@@ -151,7 +152,7 @@ class LifeLogique {
     printDebug("[ DEBUG ] InitChunks done.");
     printDebug("");
     return false;
-  }
+  }*/
 
   // Permet de récupèrer l'index de la cellule si elle existe
   int _getCellAt(int gx, int gy) {
@@ -226,6 +227,7 @@ class LifeLogique {
     if (neighbors == 3) {
       printDebug("[ DEBUG ] Born.");
       _safeSetCellAt(gx, gy, livingCell);
+      _counterCellsAlive++;
     }
   }
 
@@ -244,6 +246,7 @@ class LifeLogique {
     } else {
       printDebug("[ DEBUG ] Still alive.");
       _safeSetCellAt(gx, gy, livingCell);
+      _counterCellsAlive++;
     }
   }
 
@@ -308,6 +311,11 @@ class Chunk {
   static int convert2Dto1D(int lx, int ly) => ly * chunkSize + lx;
   static Point<int> convert1Dto2D(int index) =>
       Point<int>(index % chunkSize, index ~/ chunkSize);
+
+  void editChunk(int lx, int ly, int cellState) {
+    final index = convert2Dto1D(lx, ly);
+    state[index] = cellState;
+  }
 
   // Permet de récupèrer la position dans la grille de toutes les cellules du chunk
   Set<Point<int>> getAllCells() {

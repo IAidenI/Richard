@@ -21,9 +21,7 @@ class Life extends StatefulWidget {
 class _LifeState extends State<Life> {
   GameLifeThemes theme = GameLifeThemes();
 
-  Set<Point<int>> _initialCell = <Point<int>>{};
   final LifeLogique _life = LifeLogique();
-  bool _notInit = true;
   bool _center = false;
 
   int _resetId = 0;
@@ -43,81 +41,6 @@ class _LifeState extends State<Life> {
 
   final format = NumberFormat.decimalPattern('fr_FR');
 
-  void printGrid(
-    Set<Point<int>> cells, {
-    int? width,
-    int? height,
-    Point<int>? center,
-    int padding = 1,
-    String live = '■',
-    String dead = '·',
-    bool showAxes = true,
-    bool invertY = false,
-  }) {
-    if (cells.isEmpty) {
-      print("Aucune cellule ❌");
-      return;
-    }
-
-    // Bornes des points
-    final xs = cells.map((p) => p.x);
-    final ys = cells.map((p) => p.y);
-    int minX = xs.reduce(min), maxX = xs.reduce(max);
-    int minY = ys.reduce(min), maxY = ys.reduce(max);
-
-    // Zone d'affichage (fit ou fenêtre)
-    if (width == null || height == null) {
-      minX -= padding;
-      maxX += padding;
-      minY -= padding;
-      maxY += padding;
-    } else {
-      final c = center ?? Point<int>((minX + maxX) ~/ 2, (minY + maxY) ~/ 2);
-      final halfW = width ~/ 2;
-      final halfH = height ~/ 2;
-      minX = c.x - halfW;
-      maxX = c.x + (width - halfW - 1);
-      minY = c.y - halfH;
-      maxY = c.y + (height - halfH - 1);
-    }
-
-    final buf = StringBuffer();
-    final set = cells; // alias
-
-    // En-tête axes X (dizaines/units)
-    if (showAxes) {
-      // ligne des dizaines (mod 10) pour lisibilité
-      buf.write('     ');
-      for (int x = minX; x <= maxX; x++) {
-        buf.write(((x ~/ 10) % 10).abs());
-      }
-      buf.write('\n     ');
-      for (int x = minX; x <= maxX; x++) {
-        buf.write((x % 10).abs());
-      }
-      buf.write('\n');
-    }
-
-    // Parcours lignes
-    final yStart = invertY ? maxY : minY;
-    final yEnd = invertY ? minY : maxY;
-    final yStep = invertY ? -1 : 1;
-
-    for (int y = yStart; invertY ? y >= yEnd : y <= yEnd; y += yStep) {
-      // étiquette Y alignée
-      if (showAxes) {
-        buf.write(y.toString().padLeft(4));
-        buf.write(' ');
-      }
-      for (int x = minX; x <= maxX; x++) {
-        buf.write(set.contains(Point<int>(x, y)) ? live : dead);
-      }
-      buf.write('\n');
-    }
-
-    print(buf.toString());
-  }
-
   @override
   void initState() {
     super.initState();
@@ -130,12 +53,14 @@ class _LifeState extends State<Life> {
   void _tickStart() {
     _tick?.cancel(); // Evite les doublons
     _tick = Timer.periodic(_generationSpeed, (timer) {
+      printDebug("isPause");
       if (_isPaused) return;
 
-      if (_notInit) return;
+      printDebug("alive");
+      if (_life.getCounterCellsAlive == 0) return;
 
       printDebug("Start $_generation° generation.");
-      _initialCell = _life.startNextGeneration(generation: _generation);
+      _life.startNextGeneration(generation: _generation);
 
       setState(() {
         _generation++;
@@ -176,7 +101,7 @@ class _LifeState extends State<Life> {
         _isPaused = true;
         _pauseIcon = Icons.pause;
       } else {
-        _notInit = _life.reStart(_initialCell);
+        //_notInit = _life.initChunks();
         _isPaused = !_isPaused;
         _pauseIcon = _isPaused ? Icons.pause : Icons.play_arrow;
       }
@@ -197,18 +122,17 @@ class _LifeState extends State<Life> {
 
   void _resetGeneration() {
     _generation = 0;
-    _initialCell.clear();
 
     // Vide les buffers
     _life.clear();
 
-    // Remet à 0 le timer
-    _tickPause(reset: true);
-    _tickReset();
-
     _generationSpeed = _initialSpeed;
     _fastGeneration = theme.getIconSettings;
     _realyFastGeneration = theme.getIconSettings;
+
+    // Remet à 0 le timer
+    _tickPause(reset: true);
+    _tickReset();
 
     _resetId++; // Pour recrée un nouveau GridZoom
   }
@@ -351,11 +275,7 @@ class _LifeState extends State<Life> {
                   MediaQuery.of(context).size.height,
                 ),
                 centerRequest: _center,
-                initialCells: Set.of(_initialCell),
                 theme: theme,
-                getCells: (cells) {
-                  _initialCell = Set.of(cells);
-                },
               ),
 
               // Menu supéreur
@@ -426,11 +346,21 @@ class _LifeState extends State<Life> {
                                             // Si un objet à été séléctionner alors mets à jours la liste initial avec et notifie tout le monde
                                             if (indexPattern != null) {
                                               setState(() {
-                                                _initialCell = LifePatterns
-                                                    .all[indexPattern
-                                                        .x][indexPattern.y]
-                                                    .translated()
-                                                    .getCells;
+                                                // Mets à jour le backend
+                                                for (var position
+                                                    in LifePatterns
+                                                        .all[indexPattern
+                                                            .x][indexPattern.y]
+                                                        .translated()
+                                                        .getCells) {
+                                                  _life.editCell(
+                                                    position,
+                                                    livingCell,
+                                                  ); // Mets à jour le backend
+                                                  _life
+                                                      .incrementCounterCellsAlive();
+                                                }
+                                                _resetId++; // Notifie l'UI du changement
                                               });
                                             }
                                           },
@@ -545,13 +475,7 @@ class _LifeState extends State<Life> {
                         // Bouton pour lance/stoper la génération
                         _buildSettingsButton(
                           icon: _pauseIcon,
-                          onPressed: () {
-                            _tickPause();
-
-                            for (var cell in _initialCell) {
-                              printDebug("$cell");
-                            }
-                          },
+                          onPressed: () => _tickPause(),
                         ),
 
                         // Bouton pour avance rapide de la génération
@@ -593,7 +517,7 @@ class _LifeState extends State<Life> {
                           },
                         ),
 
-                        // Bouton pour avance très rapide de la génération
+                        // Bouton pour reset la grille
                         _buildSettingsButton(
                           icon: Icons.refresh,
                           onPressed: () {

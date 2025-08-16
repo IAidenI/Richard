@@ -881,9 +881,7 @@ class GridZoom extends StatefulWidget {
   final int generation;
   final Size screenSize;
   final bool centerRequest;
-  final Set<Point<int>>? initialCells;
   final GameLifeThemes? theme;
-  final void Function(Set<Point<int>>) getCells;
 
   const GridZoom({
     super.key,
@@ -893,9 +891,7 @@ class GridZoom extends StatefulWidget {
     required this.generation,
     required this.screenSize,
     this.centerRequest = false,
-    this.initialCells,
     this.theme,
-    required this.getCells,
   });
 
   @override
@@ -908,8 +904,6 @@ class _GridZoomState extends State<GridZoom> {
 
   // Permet d'avoir un historique des cellules à afficher et donc de garder d'afficher les cellules peintes
   Set<Point<int>> cellPositionsUI = <Point<int>>{};
-  // Permet d'avoir un historique des cellules à envoyer à la logique et donc de garder d'afficher les cellules peintes
-  Set<Point<int>> cellPositionsBack = <Point<int>>{};
 
   Set<Point<int>> convertBackToUi(Set<Point<int>> back) {
     Set<Point<int>> ui = <Point<int>>{};
@@ -957,20 +951,7 @@ class _GridZoomState extends State<GridZoom> {
   void initState() {
     super.initState();
 
-    // Si demandé, ajouté une liste de cellules prédéfinit
-    if (widget.initialCells != null) {
-      printDebug("Adding initial cell...");
-      for (var initCell in widget.initialCells!) {
-        printDebug("$initCell");
-      }
-
-      cellPositionsBack = Set.of(widget.initialCells!);
-      cellPositionsUI = convertBackToUi(cellPositionsBack);
-    }
-
-    if (!widget.isPaused) {
-      _getNextGeneration();
-    }
+    _getNextGeneration();
 
     _centerGrid();
   }
@@ -980,18 +961,6 @@ class _GridZoomState extends State<GridZoom> {
     super.didUpdateWidget(oldWidget);
 
     if (widget.centerRequest) _centerGrid();
-
-    // Si demandé, ajouté une liste de cellules prédéfinit
-    if (widget.initialCells != null &&
-        !setEquals(oldWidget.initialCells ?? const {}, widget.initialCells!)) {
-      for (var initCell in widget.initialCells!) {
-        printDebug("Adding initial cell...");
-        printDebug("$initCell");
-      }
-
-      cellPositionsBack = Set.of(widget.initialCells!);
-      cellPositionsUI = convertBackToUi(cellPositionsBack);
-    }
 
     if (oldWidget.generation != widget.generation ||
         oldWidget.life != widget.life) {
@@ -1027,27 +996,26 @@ class _GridZoomState extends State<GridZoom> {
             );
 
             setState(() {
-              printDebug("cellPositions : $cellPositionsBack", debug: false);
               if (!cellPositionsUI.contains(posUI)) {
                 cellPositionsUI = Set.of(cellPositionsUI)
                   ..add(
                     posUI,
                   ); // Copie l'ancienne liste dans une nouvelle instance et assigne cette nouvelle liste à l'ancienne pour que le shouldRepaint détécte une nouvelle liste
+                widget.life.editCell(
+                  posBack,
+                  livingCell,
+                ); // Mets à jour le backend
+                widget.life.incrementCounterCellsAlive();
               } else {
                 // Si le point existe déjà alors le supprimer
                 cellPositionsUI = Set.of(cellPositionsUI)
                   ..removeWhere((position) => position == posUI);
+                widget.life.editCell(
+                  posBack,
+                  deadCell,
+                ); // Mets à jour le backend
+                widget.life.decrementCounterCellsAlive();
               }
-
-              // Mets à jour la liste pour le backend
-              if (!cellPositionsBack.contains(posBack)) {
-                cellPositionsBack = Set.of(cellPositionsBack)..add(posBack);
-              } else {
-                cellPositionsBack = Set.of(cellPositionsBack)
-                  ..removeWhere((position) => position == posBack);
-              }
-
-              widget.getCells(Set.of(cellPositionsBack));
             });
           }
         },
