@@ -24,6 +24,10 @@ class _LifeState extends State<Life> {
   final LifeLogique _life = LifeLogique();
   bool _center = false;
 
+  // Gestion de la selection des pattern proposé
+  Set<Point<int>> _selectedPattern = <Point<int>>{};
+  int _applyPattern = 0;
+
   int _resetId = 0;
 
   // Gestion du timer
@@ -38,6 +42,8 @@ class _LifeState extends State<Life> {
   // Gestion de la pause
   bool _isPaused = true;
   IconData _pauseIcon = Icons.pause;
+
+  bool _addPattern = false;
 
   final format = NumberFormat.decimalPattern('fr_FR');
 
@@ -122,6 +128,7 @@ class _LifeState extends State<Life> {
 
   void _resetGeneration() {
     _generation = 0;
+    _applyPattern = 0;
 
     // Vide les buffers
     _life.clear();
@@ -269,173 +276,208 @@ class _LifeState extends State<Life> {
                 key: ValueKey(_resetId),
                 life: _life,
                 isPaused: _isPaused,
+                addPattern: _addPattern,
                 generation: _generation,
                 screenSize: Size(
                   MediaQuery.of(context).size.width,
                   MediaQuery.of(context).size.height,
                 ),
+                selectedPattern: _selectedPattern,
+                applyPattern: _applyPattern,
                 centerRequest: _center,
                 theme: theme,
               ),
 
               // Menu supéreur
-              Align(
-                alignment: Alignment.topCenter,
-                child: Stack(
-                  children: [
-                    InformationsFrame(
-                      backgroundColor: theme.getInformationBackground,
-                      frameColor: theme.getInformationFrame,
-                      // Pour garder la frame autour du child
-                      child: IntrinsicWidth(
-                        child: IntrinsicHeight(
-                          child: Padding(
-                            padding: const EdgeInsets.all(30),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Place les deux boutons
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // Bouton pour le workshop
-                                      Container(
-                                        width: 35,
-                                        height: 35,
-                                        decoration: BoxDecoration(
-                                          color: theme.getPrimary,
-                                          borderRadius: BorderRadius.circular(
-                                            5,
-                                          ),
-                                        ),
-                                        child: _buildSettingsButton(
-                                          icon: Icons.handyman,
-                                          size: 25,
-                                          onPressed: () async {
-                                            // Permet de lancer le workshop que si le jeu n'est pas en cours
-                                            if (!_isPaused) {
-                                              InfoDisplayer.buildInfoDisplayer(
-                                                context,
-                                                "Impossible, générations en cours...",
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 50,
-                                                      vertical: 20,
-                                                    ),
-                                                duration: const Duration(
-                                                  seconds: 10,
-                                                ),
-                                              );
-                                              return;
-                                            }
-
-                                            // Récuère le nom de la catégorie et l'objet séléctionné
-                                            final indexPattern =
-                                                await showDialog<Point<int>?>(
-                                                  context: context,
-                                                  barrierDismissible: true,
-                                                  builder: (context) =>
-                                                      PopupWorkShop(
-                                                        theme: theme,
-                                                      ),
-                                                );
-
-                                            // Si un objet à été séléctionner alors mets à jours la liste initial avec et notifie tout le monde
-                                            if (indexPattern != null) {
-                                              setState(() {
-                                                // Mets à jour le backend
-                                                for (var position
-                                                    in LifePatterns
-                                                        .all[indexPattern
-                                                            .x][indexPattern.y]
-                                                        .translated()
-                                                        .getCells) {
-                                                  _life.editCell(
-                                                    position,
-                                                    livingCell,
-                                                  ); // Mets à jour le backend
-                                                  _life
-                                                      .incrementCounterCellsAlive();
-                                                }
-                                                _resetId++; // Notifie l'UI du changement
-                                              });
-                                            }
-                                          },
-                                        ),
-                                      ),
-
-                                      const SizedBox(height: 10),
-
-                                      // Bouton help
-                                      Container(
-                                        width: 25,
-                                        height: 25,
-                                        decoration: BoxDecoration(
-                                          color: theme.getPrimary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: _buildSettingsButton(
-                                          icon: Icons.help,
-                                          size: 15,
-                                          onPressed: () => _buildAboutPopup(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(width: 15),
-
-                                  CustomPaint(
-                                    painter: FrameInformationDelimiter(
-                                      frameColor: theme.getInformationFrame,
-                                    ),
-                                    child: SizedBox(
-                                      width: 2,
-                                      height: double.infinity,
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 15),
-
-                                  // Informations sur le jeu en cours
-                                  Column(
+              _addPattern
+                  ? // Menu lors de l'ajout d'un pattern
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Stack(
+                        children: [
+                          InformationsFrame(
+                            backgroundColor: theme.getInformationBackground,
+                            frameColor: theme.getSecondary,
+                            // Pour garder la frame autour du child
+                            child: IntrinsicWidth(
+                              child: IntrinsicHeight(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(30),
+                                  child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        "Générations : $_generation",
-                                        style: theme.popupContentLabel(),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        "Nombre de cellules en vie : ${_life.getCounterCellsAlive}",
-                                        style: theme.popupContentLabel(),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        "Chunks : ${_life.getChunks.length}",
-                                        style: theme.popupContentLabel(),
-                                      ),
-                                      Text(
-                                        "Grille : ${format.format((gridSize.width / 10).toInt())}x${format.format((gridSize.height / 10).toInt())}",
+                                        "Editing...",
                                         style: theme.popupContentLabel(),
                                       ),
                                     ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
+                      ),
+                    )
+                  : // Menu normal
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Stack(
+                        children: [
+                          InformationsFrame(
+                            backgroundColor: theme.getInformationBackground,
+                            frameColor: theme.getSecondary,
+                            // Pour garder la frame autour du child
+                            child: IntrinsicWidth(
+                              child: IntrinsicHeight(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(30),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        // Place les deux boutons
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            // Bouton pour le workshop
+                                            Container(
+                                              width: 35,
+                                              height: 35,
+                                              decoration: BoxDecoration(
+                                                color: theme.getPrimary,
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                              child: _buildSettingsButton(
+                                                icon: Icons.handyman,
+                                                size: 25,
+                                                onPressed: () async {
+                                                  // Permet de lancer le workshop que si le jeu n'est pas en cours
+                                                  if (!_isPaused) {
+                                                    InfoDisplayer.buildInfoDisplayer(
+                                                      context,
+                                                      "Impossible, générations en cours...",
+                                                      margin:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 50,
+                                                            vertical: 20,
+                                                          ),
+                                                      duration: const Duration(
+                                                        seconds: 10,
+                                                      ),
+                                                    );
+                                                    return;
+                                                  }
+
+                                                  // Récuère le nom de la catégorie et l'objet séléctionné
+                                                  final indexPattern =
+                                                      await showDialog<
+                                                        Point<int>?
+                                                      >(
+                                                        context: context,
+                                                        barrierDismissible:
+                                                            true,
+                                                        builder: (context) =>
+                                                            PopupWorkShop(
+                                                              theme: theme,
+                                                            ),
+                                                      );
+
+                                                  // Si un objet à été séléctionner alors mets à jours la liste initial avec et notifie tout le monde
+                                                  if (indexPattern != null) {
+                                                    setState(() {
+                                                      _selectedPattern =
+                                                          LifePatterns
+                                                              .all[indexPattern
+                                                                  .x][indexPattern
+                                                                  .y]
+                                                              .translated()
+                                                              .getCells;
+                                                      _addPattern = true;
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            // Bouton help
+                                            Container(
+                                              width: 25,
+                                              height: 25,
+                                              decoration: BoxDecoration(
+                                                color: theme.getPrimary,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: _buildSettingsButton(
+                                                icon: Icons.help,
+                                                size: 15,
+                                                onPressed: () =>
+                                                    _buildAboutPopup(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(width: 15),
+
+                                        // Ajoute le délimiteur
+                                        CustomPaint(
+                                          painter: FrameInformationDelimiter(
+                                            frameColor: theme.getSecondary,
+                                          ),
+                                          child: SizedBox(
+                                            width: 2,
+                                            height: double.infinity,
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 15),
+
+                                        // Informations sur le jeu en cours
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Générations : $_generation",
+                                              style: theme.popupContentLabel(),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              "Nombre de cellules en vie : ${_life.getCounterCellsAlive}",
+                                              style: theme.popupContentLabel(),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              "Chunks : ${_life.getChunks.length}",
+                                              style: theme.popupContentLabel(),
+                                            ),
+                                            Text(
+                                              "Grille : ${format.format((gridSize.width / 10).toInt())}x${format.format((gridSize.height / 10).toInt())}",
+                                              style: theme.popupContentLabel(),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
 
               // Menu général
               Align(
@@ -444,91 +486,271 @@ class _LifeState extends State<Life> {
               ),
 
               // Menu inférieur
-              Align(
-                alignment: Alignment.bottomCenter,
-                // Crée une boîte pour contenir les settings
-                child: TextButton(
-                  onPressed: () {},
-                  child: Container(
-                    width: 200,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: theme.getPrimary,
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(20),
+              _addPattern
+                  ? // Menu lors de l'ajout d'un pattern
+                    Align(
+                      alignment: Alignment.bottomCenter,
+
+                      // Crée une boîte pour contenir les settings
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Place le D-Pad
+                          SizedBox(
+                            width: 110,
+                            height: 110,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: theme.getPrimary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.getSecondary,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Déplace vers la droite
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 60),
+                                    child: _buildSettingsButton(
+                                      icon: Icons.arrow_back,
+                                      onPressed: () {
+                                        setState(
+                                          () => _selectedPattern =
+                                              _selectedPattern
+                                                  .map(
+                                                    (p) => Point<int>(
+                                                      p.x - 1,
+                                                      p.y,
+                                                    ),
+                                                  )
+                                                  .toSet(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+
+                                  // Déplace vers le haut
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 60),
+                                    child: _buildSettingsButton(
+                                      icon: Icons.arrow_upward,
+                                      onPressed: () {
+                                        setState(
+                                          () => _selectedPattern =
+                                              _selectedPattern
+                                                  .map(
+                                                    (p) => Point<int>(
+                                                      p.x,
+                                                      p.y - 1,
+                                                    ),
+                                                  )
+                                                  .toSet(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+
+                                  // Déplace vers le bas
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 60),
+                                    child: _buildSettingsButton(
+                                      icon: Icons.arrow_downward,
+                                      onPressed: () {
+                                        setState(
+                                          () => _selectedPattern =
+                                              _selectedPattern
+                                                  .map(
+                                                    (p) => Point<int>(
+                                                      p.x,
+                                                      p.y + 1,
+                                                    ),
+                                                  )
+                                                  .toSet(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+
+                                  // Déplace vers la gauche
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 60),
+                                    child: _buildSettingsButton(
+                                      icon: Icons.arrow_forward,
+                                      onPressed: () {
+                                        setState(
+                                          () => _selectedPattern =
+                                              _selectedPattern
+                                                  .map(
+                                                    (p) => Point<int>(
+                                                      p.x + 1,
+                                                      p.y,
+                                                    ),
+                                                  )
+                                                  .toSet(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          // Place les bouttons de validations/annulation
+                          SizedBox(
+                            height: 90,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: theme.getPrimary,
+                                shape: BoxShape.rectangle,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: theme.getSecondary,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Valide l'emplacement en envoyant au backend
+                                  _buildSettingsButton(
+                                    icon: Icons.check,
+                                    onPressed: () {
+                                      setState(() {
+                                        // Mets à jour le backend
+                                        for (var position in _selectedPattern) {
+                                          _life.editCell(
+                                            position,
+                                            livingCell,
+                                          ); // Mets à jour le backend
+                                          _life.incrementCounterCellsAlive();
+                                        }
+                                        _selectedPattern = <Point<int>>{};
+                                        _addPattern = false;
+                                        _applyPattern++;
+                                      });
+                                    },
+                                  ),
+
+                                  const SizedBox(height: 5),
+
+                                  // Vide le pattern séléctionné pour annuler
+                                  _buildSettingsButton(
+                                    icon: Icons.close,
+                                    onPressed: () => setState(() {
+                                      _selectedPattern = <Point<int>>{};
+                                      _addPattern = false;
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : // Menu normal
+                    Align(
+                      alignment: Alignment.bottomCenter,
+
+                      // Crée une boîte pour contenir les settings
+                      child: Container(
+                        width: 210,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: theme.getPrimary,
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: theme.getSecondary,
+                            width: 1,
+                          ),
+                        ),
+                        // Place les élément de paramètres
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Bouton pour ouvrir les settings
+                            _buildSettingsButton(
+                              icon: Icons.gps_fixed,
+                              onPressed: () {
+                                setState(() => _center = true);
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  _center = false;
+                                });
+                              },
+                            ),
+
+                            // Bouton pour lance/stoper la génération
+                            _buildSettingsButton(
+                              icon: _pauseIcon,
+                              onPressed: () => _tickPause(),
+                            ),
+
+                            // Bouton pour avance rapide de la génération
+                            _buildSettingsButton(
+                              icon: Icons.skip_next,
+                              color: _fastGeneration,
+                              onPressed: () {
+                                setState(() {
+                                  Duration newSpeed = Duration(
+                                    milliseconds: 300,
+                                  );
+                                  if (_generationSpeed != newSpeed) {
+                                    _realyFastGeneration =
+                                        theme.getIconSettings;
+                                    _fastGeneration =
+                                        theme.getselectedIconSettings;
+                                    _changeInterval(newSpeed);
+                                  } else {
+                                    _fastGeneration = theme.getIconSettings;
+                                    _changeInterval(_initialSpeed);
+                                  }
+                                });
+                              },
+                            ),
+
+                            // Bouton pour avance très rapide de la génération
+                            _buildSettingsButton(
+                              icon: Icons.fast_forward,
+                              color: _realyFastGeneration,
+                              onPressed: () {
+                                setState(() {
+                                  Duration newSpeed = Duration(
+                                    milliseconds: 50,
+                                  );
+                                  if (_generationSpeed != newSpeed) {
+                                    _realyFastGeneration =
+                                        theme.getselectedIconSettings;
+                                    _fastGeneration = theme.getIconSettings;
+                                    _changeInterval(newSpeed);
+                                  } else {
+                                    _realyFastGeneration =
+                                        theme.getIconSettings;
+                                    _changeInterval(_initialSpeed);
+                                  }
+                                });
+                              },
+                            ),
+
+                            // Bouton pour reset la grille
+                            _buildSettingsButton(
+                              icon: Icons.refresh,
+                              onPressed: () {
+                                setState(() => _resetGeneration());
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    // Place les élément de paramètres
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Bouton pour ouvrir les settings
-                        _buildSettingsButton(
-                          icon: Icons.gps_fixed,
-                          onPressed: () {
-                            setState(() => _center = true);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _center = false;
-                            });
-                          },
-                        ),
-
-                        // Bouton pour lance/stoper la génération
-                        _buildSettingsButton(
-                          icon: _pauseIcon,
-                          onPressed: () => _tickPause(),
-                        ),
-
-                        // Bouton pour avance rapide de la génération
-                        _buildSettingsButton(
-                          icon: Icons.skip_next,
-                          color: _fastGeneration,
-                          onPressed: () {
-                            setState(() {
-                              Duration newSpeed = Duration(milliseconds: 300);
-                              if (_generationSpeed != newSpeed) {
-                                _realyFastGeneration = theme.getIconSettings;
-                                _fastGeneration = theme.getselectedIconSettings;
-                                _changeInterval(newSpeed);
-                              } else {
-                                _fastGeneration = theme.getIconSettings;
-                                _changeInterval(_initialSpeed);
-                              }
-                            });
-                          },
-                        ),
-
-                        // Bouton pour avance très rapide de la génération
-                        _buildSettingsButton(
-                          icon: Icons.fast_forward,
-                          color: _realyFastGeneration,
-                          onPressed: () {
-                            setState(() {
-                              Duration newSpeed = Duration(milliseconds: 50);
-                              if (_generationSpeed != newSpeed) {
-                                _realyFastGeneration =
-                                    theme.getselectedIconSettings;
-                                _fastGeneration = theme.getIconSettings;
-                                _changeInterval(newSpeed);
-                              } else {
-                                _realyFastGeneration = theme.getIconSettings;
-                                _changeInterval(_initialSpeed);
-                              }
-                            });
-                          },
-                        ),
-
-                        // Bouton pour reset la grille
-                        _buildSettingsButton(
-                          icon: Icons.refresh,
-                          onPressed: () {
-                            setState(() => _resetGeneration());
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ],
           );
         },

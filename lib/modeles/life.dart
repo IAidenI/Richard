@@ -19,7 +19,7 @@ class LifeLogique {
 
   LifeLogique();
 
-  void editCell(Point<int> global, int cellState) {
+  Point<int>? editCell(Point<int> global, int cellState) {
     // Récupère le chunk correspondant
     Point<int> chunkPos = realToChunk(global.x, global.y);
 
@@ -34,7 +34,7 @@ class LifeLogique {
     Point<int> local = localToChunk(global.x, global.y);
 
     // Edite la cellule
-    chunk.editChunk(local.x, local.y, cellState);
+    return chunk.editChunk(local.x, local.y, cellState);
   }
 
   void startNextGeneration({int generation = -1}) {
@@ -312,9 +312,11 @@ class Chunk {
   static Point<int> convert1Dto2D(int index) =>
       Point<int>(index % chunkSize, index ~/ chunkSize);
 
-  void editChunk(int lx, int ly, int cellState) {
+  Point<int>? editChunk(int lx, int ly, int cellState) {
     final index = convert2Dto1D(lx, ly);
+    if (state[index] == cellState) return convert1Dto2D(index);
     state[index] = cellState;
+    return null;
   }
 
   // Permet de récupèrer la position dans la grille de toutes les cellules du chunk

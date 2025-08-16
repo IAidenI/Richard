@@ -880,6 +880,9 @@ class GridZoom extends StatefulWidget {
   final bool isPaused;
   final int generation;
   final Size screenSize;
+  final Set<Point<int>> selectedPattern;
+  final int applyPattern;
+  final bool addPattern;
   final bool centerRequest;
   final GameLifeThemes? theme;
 
@@ -888,8 +891,11 @@ class GridZoom extends StatefulWidget {
     this.cell = cellSize,
     required this.life,
     required this.isPaused,
+    required this.addPattern,
     required this.generation,
     required this.screenSize,
+    required this.selectedPattern,
+    required this.applyPattern,
     this.centerRequest = false,
     this.theme,
   });
@@ -903,7 +909,8 @@ class _GridZoomState extends State<GridZoom> {
       TransformationController(); // Pour définir la zone de spawn
 
   // Permet d'avoir un historique des cellules à afficher et donc de garder d'afficher les cellules peintes
-  Set<Point<int>> cellPositionsUI = <Point<int>>{};
+  Set<Point<int>> _baseUI = <Point<int>>{};
+  Set<Point<int>> _overlayUI = <Point<int>>{};
 
   Set<Point<int>> convertBackToUi(Set<Point<int>> back) {
     Set<Point<int>> ui = <Point<int>>{};
@@ -928,7 +935,7 @@ class _GridZoomState extends State<GridZoom> {
       }
     }
     setState(() {
-      cellPositionsUI = next; // Notifie le shouldRepaint
+      _baseUI = next; // Notifie le shouldRepaint
     });
   }
 
@@ -947,6 +954,13 @@ class _GridZoomState extends State<GridZoom> {
     });
   }
 
+  void _stampOverlay() {
+    setState(() {
+      _baseUI.addAll(_overlayUI);
+      _overlayUI.clear();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -957,11 +971,30 @@ class _GridZoomState extends State<GridZoom> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant GridZoom oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.centerRequest) _centerGrid();
 
+    // Fusionne l'overlay et la base si demandé
+    if (oldWidget.applyPattern != widget.applyPattern) _stampOverlay();
+
+    // Mets à jour l'overlay en fonction de la saisie utilisateur
+    if (oldWidget.selectedPattern != widget.selectedPattern) {
+      if (widget.selectedPattern.isEmpty) {
+        _overlayUI = <Point<int>>{};
+      } else {
+        _overlayUI = convertBackToUi(widget.selectedPattern);
+      }
+    }
+
+    // A chaque génération mets à jour l'affichage
     if (oldWidget.generation != widget.generation ||
         oldWidget.life != widget.life) {
       _getNextGeneration();
@@ -979,7 +1012,7 @@ class _GridZoomState extends State<GridZoom> {
       child: GestureDetector(
         // Détecte chaque clique dans la grille et détermine sa position
         onTapUp: (TapUpDetails details) {
-          if (widget.isPaused) {
+          if (widget.isPaused && !widget.addPattern) {
             // Convertit la position en int (ex X=28.9 - Y=34.2 => X=20.0 Y=30.0) affine de faire les calculs en backend avec une grille plus petite
             Point<int> posUI = Point<int>(
               ((details.localPosition.dx ~/ widget.cell).toDouble() *
@@ -996,8 +1029,8 @@ class _GridZoomState extends State<GridZoom> {
             );
 
             setState(() {
-              if (!cellPositionsUI.contains(posUI)) {
-                cellPositionsUI = Set.of(cellPositionsUI)
+              if (!_baseUI.contains(posUI)) {
+                _baseUI = Set.of(_baseUI)
                   ..add(
                     posUI,
                   ); // Copie l'ancienne liste dans une nouvelle instance et assigne cette nouvelle liste à l'ancienne pour que le shouldRepaint détécte une nouvelle liste
@@ -1008,7 +1041,7 @@ class _GridZoomState extends State<GridZoom> {
                 widget.life.incrementCounterCellsAlive();
               } else {
                 // Si le point existe déjà alors le supprimer
-                cellPositionsUI = Set.of(cellPositionsUI)
+                _baseUI = Set.of(_baseUI)
                   ..removeWhere((position) => position == posUI);
                 widget.life.editCell(
                   posBack,
@@ -1019,17 +1052,35 @@ class _GridZoomState extends State<GridZoom> {
             });
           }
         },
-        child: CustomPaint(
-          size: gridSize,
-          painter: GridPainter(
-            cell: widget.cell,
-            gridColor: widget.theme?.getGridLineColor,
-          ),
-          foregroundPainter: CellPaint(
-            positions: cellPositionsUI,
-            cellDimensions: widget.cell,
-            cellColor: widget.theme?.getCellsColor,
-          ),
+        child: Stack(
+          children: [
+            // Affiche la grille
+            CustomPaint(
+              size: gridSize,
+              painter: GridPainter(
+                cell: widget.cell,
+                gridColor: widget.theme?.getGridLineColor,
+              ),
+            ),
+            // Affiche devant la grille les cellules déjà positionné
+            CustomPaint(
+              size: gridSize,
+              foregroundPainter: CellPaint(
+                positions: _baseUI,
+                cellDimensions: widget.cell,
+                cellColor: widget.theme?.getCellsColor,
+              ),
+            ),
+            // Affiche devant la grille les cellules du pattern séléctionné
+            CustomPaint(
+              size: gridSize,
+              foregroundPainter: CellPaint(
+                positions: _overlayUI,
+                cellDimensions: widget.cell,
+                cellColor: widget.theme?.getCellsPatternColor,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -406,9 +406,11 @@ class GameLifeThemes implements AppTheme {
   final Color _gridBackground = const Color.fromARGB(255, 27, 24, 19);
   final Color _gridLine = Colors.black;
   final Color _cellsColor = Colors.white;
+  final Color _cellsPatternColor = const Color.fromARGB(200, 125, 125, 125);
   Color get getGridBackgroundColor => _gridBackground;
   Color get getGridLineColor => _gridLine;
   Color get getCellsColor => _cellsColor;
+  Color get getCellsPatternColor => _cellsPatternColor;
 
   // Gestion des couleurs des boutons de validation/annulation
   final Color _buttonColorOK = const Color.fromARGB(255, 160, 100, 50);
@@ -435,14 +437,12 @@ class GameLifeThemes implements AppTheme {
   Color get getselectedIconSettings => _selectedIconSettings;
 
   // Gestion des couleurs pour le bandeau supérieur informatif
-  final Color _informationFrame = const Color.fromARGB(255, 200, 190, 160);
   final Color _informationBackground = const Color.fromARGB(100, 0, 0, 0);
-  Color get getInformationFrame => _informationFrame;
   Color get getInformationBackground => _informationBackground;
 
   // Thèmes générales
   final Color _primary = const Color.fromARGB(255, 56, 52, 52);
-  final Color _secondary = Colors.black;
+  final Color _secondary = const Color.fromARGB(255, 200, 190, 160);
   final Color _tertiary = const Color.fromARGB(60, 255, 255, 255);
   final Color _buttonColor = const Color.fromARGB(255, 106, 94, 81);
   final Color _buttonTextColor = Colors.white;
