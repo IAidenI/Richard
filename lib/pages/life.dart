@@ -43,6 +43,81 @@ class _LifeState extends State<Life> {
 
   final format = NumberFormat.decimalPattern('fr_FR');
 
+  void printGrid(
+    Set<Point<int>> cells, {
+    int? width,
+    int? height,
+    Point<int>? center,
+    int padding = 1,
+    String live = '■',
+    String dead = '·',
+    bool showAxes = true,
+    bool invertY = false,
+  }) {
+    if (cells.isEmpty) {
+      print("Aucune cellule ❌");
+      return;
+    }
+
+    // Bornes des points
+    final xs = cells.map((p) => p.x);
+    final ys = cells.map((p) => p.y);
+    int minX = xs.reduce(min), maxX = xs.reduce(max);
+    int minY = ys.reduce(min), maxY = ys.reduce(max);
+
+    // Zone d'affichage (fit ou fenêtre)
+    if (width == null || height == null) {
+      minX -= padding;
+      maxX += padding;
+      minY -= padding;
+      maxY += padding;
+    } else {
+      final c = center ?? Point<int>((minX + maxX) ~/ 2, (minY + maxY) ~/ 2);
+      final halfW = width ~/ 2;
+      final halfH = height ~/ 2;
+      minX = c.x - halfW;
+      maxX = c.x + (width - halfW - 1);
+      minY = c.y - halfH;
+      maxY = c.y + (height - halfH - 1);
+    }
+
+    final buf = StringBuffer();
+    final set = cells; // alias
+
+    // En-tête axes X (dizaines/units)
+    if (showAxes) {
+      // ligne des dizaines (mod 10) pour lisibilité
+      buf.write('     ');
+      for (int x = minX; x <= maxX; x++) {
+        buf.write(((x ~/ 10) % 10).abs());
+      }
+      buf.write('\n     ');
+      for (int x = minX; x <= maxX; x++) {
+        buf.write((x % 10).abs());
+      }
+      buf.write('\n');
+    }
+
+    // Parcours lignes
+    final yStart = invertY ? maxY : minY;
+    final yEnd = invertY ? minY : maxY;
+    final yStep = invertY ? -1 : 1;
+
+    for (int y = yStart; invertY ? y >= yEnd : y <= yEnd; y += yStep) {
+      // étiquette Y alignée
+      if (showAxes) {
+        buf.write(y.toString().padLeft(4));
+        buf.write(' ');
+      }
+      for (int x = minX; x <= maxX; x++) {
+        buf.write(set.contains(Point<int>(x, y)) ? live : dead);
+      }
+      buf.write('\n');
+    }
+
+    print(buf.toString());
+  }
+
   @override
   void initState() {
     super.initState();

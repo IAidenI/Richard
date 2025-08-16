@@ -21,6 +21,7 @@ class LifeLogique {
 
   bool reStart(Set<Point<int>> initialCell) {
     _initialCell = initialCell;
+    clear();
     return _initChunks();
   }
 
