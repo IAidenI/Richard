@@ -399,7 +399,7 @@ class Methuselah {
     name: "Arcon",
     category: category,
     size: Size(7, 3),
-    generations: -1,
+    generations: 5206,
     cells: {
       Point(1, 0),
       Point(0, 2),
@@ -416,7 +416,7 @@ class Methuselah {
     name: "Rabbits",
     category: category,
     size: Size(8, 4),
-    generations: -1,
+    generations: 17332,
     cells: {
       Point(0, 1),
       Point(2, 1),

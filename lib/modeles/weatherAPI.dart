@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
+import 'package:richard/dbug.dart';
+import 'package:richard/ui/generalUI.dart';
 
 import '../assets/constants.dart';
 import 'package:http/http.dart' as http;
@@ -138,61 +140,58 @@ class Weatherapi {
 
   // Première instance récupèration de la position gps
   Future<void> initAPI() async {
-    _gpsPosition = await _determinatePosition();
+    // Si GPS désactivé ne rien faire
+    if (!_enableGPS) return;
+
+    // Si on a déjà une position pré-utilisé alors l'utiliser
+    if (InitialData.gpsPosition != null) {
+      _gpsPosition = InitialData.gpsPosition;
+      return;
+    }
+
+    // Sinon, tente la dernière position connue
+    final last = await Geolocator.getLastKnownPosition();
+    if (last != null) {
+      _gpsPosition = last;
+      return;
+    }
+
+    // Sinon, tente un fix rapide avec timeout court
+    try {
+      _gpsPosition = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
+        ),
+      ).timeout(const Duration(seconds: 5));
+    } catch (_) {
+      _gpsPosition =
+          null; // Si rien n'a marcher alors utilisation de l'insee par défault
+    }
   }
 
   // Appelle l'api
   Future<void> fetchWeather() async {
     try {
-      print("===========================================");
-      print("[ DEBUG ] Fetching data...");
+      printDebug("===========================================");
+      printDebug("[ DEBUG ] Fetching data...");
 
       // Si l'utilisateur demande la position gps, alors convertir en code insee
       if (_enableGPS && _gpsPosition != null) {
         await fetchGPSToInsee();
       }
 
-      print("[ DEBUG ] Using insee code $_insee");
+      printDebug("[ DEBUG ] Using insee code $_insee");
       await fetchWeatherHourly();
       await fetchWeatherDaily();
-      print("[ OK ] Data feched.");
+      printDebug("[ OK ] Data feched.");
       isDataOk = true;
-      print("");
-      print("===========================================");
+      printDebug("");
+      printDebug("===========================================");
     } on Exception catch (_) {
       isDataOk = false;
     }
     isReady = true;
-  }
-
-  Future<Position?> _determinatePosition() async {
-    bool serviceEnable;
-    LocationPermission permissions;
-
-    // Vérifie si la géolocalisation est disponible
-    serviceEnable = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnable) {
-      flag = CodeErrorAPI.GEOLOC_SERVICE_DISABLE;
-      return null;
-    }
-
-    // Vérifie et demande au besoin les permissions nécessaire
-    permissions = await Geolocator.checkPermission();
-    if (permissions == LocationPermission.denied) {
-      permissions = await Geolocator.requestPermission();
-      if (permissions == LocationPermission.denied) {
-        flag = CodeErrorAPI.GEOLOC_PERMISSION_DENIED;
-        return null;
-      }
-    }
-
-    if (permissions == LocationPermission.deniedForever) {
-      flag = CodeErrorAPI.GEOLOC_FOREVER_DENIED;
-      return null;
-    }
-
-    flag = CodeErrorAPI.GEOLOC_OK;
-    return Geolocator.getCurrentPosition();
   }
 
   Future<void> fetchGPSToInsee() async {
@@ -336,30 +335,30 @@ class Weatherapi {
   }
 
   void printData() {
-    print("=== WEATHER DATA ===");
-    print("City       : $_cityName");
-    print(
+    printDebug("=== WEATHER DATA ===");
+    printDebug("City       : $_cityName");
+    printDebug(
       "Now        : $_currentTemp°C, $_currentHumidity% hum, $_currentWind km/h wind, weather code $_currentWeather",
     );
 
-    print("---------------------");
+    printDebug("---------------------");
 
     for (final h in _hourlyData) {
       final hourStr = h.hour.toString().padLeft(2, '0');
-      print("$hourStr h : ${h.temp}°C | weather code: ${h.weather}");
+      printDebug("$hourStr h : ${h.temp}°C | weather code: ${h.weather}");
     }
 
-    print("---------------------");
+    printDebug("---------------------");
 
     for (final h in _dailyData) {
       final hourStr = dayTable[h.day];
-      print(
+      printDebug(
         "$hourStr : ${h.tempMin}°C - ${h.tempMax}°C | weather code: ${h.weather}",
       );
     }
 
-    print("=====================");
-    print("");
+    printDebug("=====================");
+    printDebug("");
   }
 
   // Getters
@@ -508,6 +507,6 @@ class City<T> {
   T get getCodeInsee => codeInsee;
 
   void printData() {
-    print("=== CITY DATA | name : $name - insee : $codeInsee ===");
+    printDebug("=== CITY DATA | name : $name - insee : $codeInsee ===");
   }
 }

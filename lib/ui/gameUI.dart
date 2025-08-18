@@ -138,35 +138,24 @@ class FrameGradient extends CustomPainter {
     this.alpha = 0.8,
   });
 
-  Color addToColor({
-    required Color color,
-    required int amount,
-    required double alphaFactor,
-  }) {
-    int clamp(int value) => value.clamp(0, 255);
-
-    return Color.fromARGB(
-      clamp((color.a * 255 * alphaFactor).round()),
-      clamp((color.r * 255).round() + amount),
-      clamp((color.g * 255).round() + amount),
-      clamp((color.b * 255).round() + amount),
-    );
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
     final double strokeWidth = 2;
 
     // Crée 3 cadre, avec un décalage passé en paramètre, par défaut il est de +20
     Color color1 = color;
-    Color color2 = addToColor(
+    Color color2 = AppTheme.addToColor(
       color: color,
-      amount: gradient,
+      r: gradient,
+      g: gradient,
+      b: gradient,
       alphaFactor: alpha,
     );
-    Color color3 = addToColor(
+    Color color3 = AppTheme.addToColor(
       color: color2,
-      amount: gradient,
+      r: gradient,
+      g: gradient,
+      b: gradient,
       alphaFactor: alpha,
     );
 

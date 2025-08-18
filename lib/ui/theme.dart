@@ -14,6 +14,42 @@ abstract class AppTheme {
   TextStyle get getPopupGenericTitle;
   TextStyle get getPopupGenericLabel;
   TextStyle get getPupGenericTextButton;
+
+  static int clamp(int value) => value.clamp(0, 255);
+
+  static int offsetAlpha(Color color, double alphaFactor) =>
+      clamp((color.a * 255 * alphaFactor).round());
+
+  static int offsetR(Color color, int r) => clamp((color.r * 255).round() + r);
+
+  static int offsetG(Color color, int g) => clamp((color.g * 255).round() + g);
+
+  static int offsetB(Color color, int b) => clamp((color.b * 255).round() + b);
+
+  static Color addToColor({
+    required Color color,
+    int? r,
+    int? g,
+    int? b,
+    double? alphaFactor,
+  }) {
+    var result = color;
+
+    if (alphaFactor != null) {
+      result = result.withAlpha(offsetAlpha(result, alphaFactor));
+    }
+    if (r != null) {
+      result = result.withRed(offsetR(result, r));
+    }
+    if (g != null) {
+      result = result.withGreen(offsetG(result, g));
+    }
+    if (b != null) {
+      result = result.withBlue(offsetB(result, b));
+    }
+
+    return result;
+  }
 }
 
 // =============================================

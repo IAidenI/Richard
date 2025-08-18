@@ -1,10 +1,15 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:richard/ui/theme.dart';
+
+class InitialData {
+  static Position? gpsPosition;
+}
+
 /*
   Crée un menu déroulant personalisé
 */
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:richard/ui/theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class FloatingMenu extends StatefulWidget {
   final AppTheme theme;
@@ -29,7 +34,7 @@ class _FloatingMenuState extends State<FloatingMenu> {
       ),
       onOpen: () => setState(() => _menuOpen = true),
       onClose: () => setState(() => _menuOpen = false),
-      alignmentOffset: const Offset(-80, 0),
+      alignmentOffset: const Offset(-110, -20),
       builder: (context, controller, child) {
         return TextButton(
           onPressed: () =>
@@ -49,26 +54,37 @@ class _FloatingMenuState extends State<FloatingMenu> {
         );
       },
       menuChildren: <Widget>[
+        // Bloc "Général"
         MenuItemButton(
-          leadingIcon: const Icon(Icons.person),
-          child: const Text("Météo"),
-          onPressed: () {},
+          leadingIcon: const Icon(Icons.home_rounded),
+          child: const Text('Accueil'),
+          onPressed: () => _go(context, '/'),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.wb_sunny_rounded),
+          child: const Text('Météo'),
+          onPressed: () => _go(context, '/weather'),
         ),
 
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.person),
-          child: const Text("Rapel"),
-          onPressed: () {},
-        ),
-
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.person),
-          child: const Text("Liste course"),
-          onPressed: () {},
+        // Bloc "Jeux"
+        SubmenuButton(
+          leadingIcon: const Icon(Icons.sports_esports_rounded),
+          menuChildren: <Widget>[
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.grid_on_rounded),
+              child: const Text('Jeu de la vie'),
+              onPressed: () => _go(context, '/game/life'),
+            ),
+          ],
+          child: const Text('Jeux'),
         ),
       ],
     );
   }
+}
+
+void _go(BuildContext context, String route) {
+  Navigator.of(context).pushNamed(route);
 }
 
 /*
@@ -83,13 +99,17 @@ class InfoDisplayer {
     EdgeInsets? margin,
     Duration? duration,
   }) {
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.hideCurrentSnackBar(); // Supprime l'ancien popup si existant
+
     return ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         action: action,
         content: GestureDetector(
           behavior: HitTestBehavior.opaque, // prend toute la surface
           onTap: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            messenger.hideCurrentSnackBar();
           },
           child: Center(child: Text(data)),
         ),

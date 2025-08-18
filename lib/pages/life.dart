@@ -148,12 +148,13 @@ class _LifeState extends State<Life> {
     required IconData icon,
     required Function() onPressed,
     Color? color,
-
+    Color? backgroundColor,
     double size = 25,
   }) {
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
+        backgroundColor: backgroundColor,
         padding: EdgeInsets.zero, // pas de padding
         minimumSize: Size(40, 40), // pas de taille mini
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -259,6 +260,8 @@ class _LifeState extends State<Life> {
 
   @override
   Widget build(BuildContext context) {
+    final dpadOffset = 15;
+
     return Scaffold(
       backgroundColor: theme.getGridBackgroundColor,
       // Le LayoutBuilder permet de récupèrer les dimenssions du téléphone
@@ -370,7 +373,7 @@ class _LifeState extends State<Life> {
                                                             vertical: 20,
                                                           ),
                                                       duration: const Duration(
-                                                        seconds: 10,
+                                                        seconds: 1,
                                                       ),
                                                     );
                                                     return;
@@ -516,6 +519,12 @@ class _LifeState extends State<Life> {
                                     padding: const EdgeInsets.only(right: 60),
                                     child: _buildSettingsButton(
                                       icon: Icons.arrow_back,
+                                      backgroundColor: AppTheme.addToColor(
+                                        color: theme.getPrimary,
+                                        r: dpadOffset,
+                                        g: dpadOffset,
+                                        b: dpadOffset,
+                                      ),
                                       onPressed: () {
                                         setState(
                                           () => _selectedPattern =
@@ -537,6 +546,12 @@ class _LifeState extends State<Life> {
                                     padding: const EdgeInsets.only(bottom: 60),
                                     child: _buildSettingsButton(
                                       icon: Icons.arrow_upward,
+                                      backgroundColor: AppTheme.addToColor(
+                                        color: theme.getPrimary,
+                                        r: dpadOffset,
+                                        g: dpadOffset,
+                                        b: dpadOffset,
+                                      ),
                                       onPressed: () {
                                         setState(
                                           () => _selectedPattern =
@@ -558,6 +573,12 @@ class _LifeState extends State<Life> {
                                     padding: const EdgeInsets.only(top: 60),
                                     child: _buildSettingsButton(
                                       icon: Icons.arrow_downward,
+                                      backgroundColor: AppTheme.addToColor(
+                                        color: theme.getPrimary,
+                                        r: dpadOffset,
+                                        g: dpadOffset,
+                                        b: dpadOffset,
+                                      ),
                                       onPressed: () {
                                         setState(
                                           () => _selectedPattern =
@@ -579,6 +600,12 @@ class _LifeState extends State<Life> {
                                     padding: const EdgeInsets.only(left: 60),
                                     child: _buildSettingsButton(
                                       icon: Icons.arrow_forward,
+                                      backgroundColor: AppTheme.addToColor(
+                                        color: theme.getPrimary,
+                                        r: dpadOffset,
+                                        g: dpadOffset,
+                                        b: dpadOffset,
+                                      ),
                                       onPressed: () {
                                         setState(
                                           () => _selectedPattern =
@@ -602,24 +629,31 @@ class _LifeState extends State<Life> {
                           const SizedBox(width: 10),
 
                           // Place les bouttons de validations/annulation
-                          SizedBox(
-                            height: 90,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: theme.getPrimary,
-                                shape: BoxShape.rectangle,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: theme.getSecondary,
-                                  width: 1,
-                                ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.getPrimary,
+                              shape: BoxShape.rectangle,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: theme.getSecondary,
+                                width: 1,
                               ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(5),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Valide l'emplacement en envoyant au backend
                                   _buildSettingsButton(
                                     icon: Icons.check,
+                                    backgroundColor: AppTheme.addToColor(
+                                      color: theme.getPrimary,
+                                      r: dpadOffset,
+                                      g: dpadOffset,
+                                      b: dpadOffset,
+                                    ),
                                     onPressed: () {
                                       setState(() {
                                         // Mets à jour le backend
@@ -642,6 +676,12 @@ class _LifeState extends State<Life> {
                                   // Vide le pattern séléctionné pour annuler
                                   _buildSettingsButton(
                                     icon: Icons.close,
+                                    backgroundColor: AppTheme.addToColor(
+                                      color: theme.getPrimary,
+                                      r: dpadOffset,
+                                      g: dpadOffset,
+                                      b: dpadOffset,
+                                    ),
                                     onPressed: () => setState(() {
                                       _selectedPattern = <Point<int>>{};
                                       _addPattern = false;

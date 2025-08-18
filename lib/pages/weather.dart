@@ -402,7 +402,6 @@ class _WeatherState extends State<Weather> {
               : Stack(
                   key: const ValueKey('loading'),
                   children: const [
-                    // BColor.fromARGB(102, 0, 0, 0)tions derrière + légère obscurité
                     ModalBarrier(
                       dismissible: false,
                       color: Color.fromARGB(100, 0, 0, 0),

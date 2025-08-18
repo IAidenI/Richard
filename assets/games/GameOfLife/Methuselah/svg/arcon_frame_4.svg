@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="320" viewBox="0 0 360 320" shape-rendering="crispEdges">
+  <!-- Fond -->
+  <rect x="0" y="0" width="360" height="320" fill="#FFFFFF"/>
+
+  <!-- Grille -->
+  <g stroke="#C7C4D8" stroke-width="2" fill="none">
+    <!-- Lignes verticales -->
+    <path d="M0 0 V320 M40 0 V320 M80 0 V320 M120 0 V320 M160 0 V320 M200 0 V320 M240 0 V320 M280 0 V320 M320 0 V320 M360 0 V320"/>
+    
+    <!-- Lignes horizontales -->
+    <path d="M0 0 H360 M0 40 H360 M0 80 H360 M0 120 H360 M0 160 H360 M0 200 H360 M0 240 H360 M0 280 H360 M0 320 H360"/>
+  </g>
+
+  <!-- Cellules vivantes (réduites pour laisser les lignes visibles) -->
+  <g fill="#000000">
+    <rect x="41" y="121" width="38" height="38"/>
+    <rect x="81" y="121" width="38" height="38"/>
+    <rect x="121" y="81" width="38" height="38"/>
+
+    <rect x="201" y="81" width="38" height="38"/>
+    <rect x="161" y="121" width="38" height="38"/>
+    <rect x="201" y="121" width="38" height="38"/>
+    <rect x="241" y="121" width="38" height="38"/>
+    <rect x="161" y="161" width="38" height="38"/>
+    <rect x="281" y="161" width="38" height="38"/>
+    <rect x="241" y="201" width="38" height="38"/>
+    <rect x="201" y="201" width="38" height="38"/>
+  </g>
+</svg>
